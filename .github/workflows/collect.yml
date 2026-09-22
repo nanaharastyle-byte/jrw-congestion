@@ -1,31 +1,53 @@
 name: collect
 on:
   schedule:
-    - cron: "*/5 * * * *"   # 5分ごと（GitHubの混雑状況で数分遅れることがあります）
+    - cron: "*/5 * * * *"   # 5分ごとに記録（GitHub側の混雑で遅れることがあります）
   workflow_dispatch:         # 手動実行ボタン
 permissions:
   contents: write
+  pages: write
+  id-token: write
 concurrency:
   group: collect
   cancel-in-progress: false
 jobs:
-  run:
+  collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
+    outputs:
+      publish: ${{ steps.c.outputs.publish }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - run: pip install -q jpholiday
-      - run: python congestion.py
+      - id: c
+        run: python congestion.py collect
         env:
           FORCE: ${{ github.event_name == 'workflow_dispatch' }}
+      - name: report (1時間に1回)
+        if: steps.c.outputs.publish == 'true'
+        run: python congestion.py report
       - name: save
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add -A . ':!_site'
           git commit -q -m "collect $(TZ=Asia/Tokyo date +%F_%H%M)" || exit 0
           git pull -q --rebase || true
           git push -q
+      - if: steps.c.outputs.publish == 'true'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+  deploy:
+    needs: collect
+    if: needs.collect.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.d.outputs.page_url }}
+    steps:
+      - id: d
+        uses: actions/deploy-pages@v4
