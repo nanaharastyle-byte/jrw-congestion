@@ -1,12 +1,12 @@
 {
- "1504H": [
+ "100C": [
   {
    "cars": [
     {
-     "carNo": 4,
+     "carNo": 7,
      "status": 1,
-     "congestion": 0,
-     "temp": 24,
+     "congestion": 10,
+     "temp": 22,
      "facilities": [
       1,
       2
@@ -14,18 +14,56 @@
      "types": []
     },
     {
-     "carNo": 3,
+     "carNo": 6,
      "status": 1,
      "congestion": 0,
-     "temp": 24,
+     "temp": 22,
      "facilities": [],
+     "types": [
+      3
+     ]
+    },
+    {
+     "carNo": 5,
+     "status": 1,
+     "congestion": 0,
+     "temp": 23,
+     "facilities": [],
+     "types": [
+      4
+     ]
+    },
+    {
+     "carNo": 4,
+     "status": 1,
+     "congestion": 13,
+     "temp": 22,
+     "facilities": [
+      1,
+      2
+     ],
+     "types": []
+    }
+   ]
+  },
+  {
+   "cars": [
+    {
+     "carNo": 3,
+     "status": 1,
+     "congestion": 15,
+     "temp": 23,
+     "facilities": [
+      1,
+      2
+     ],
      "types": []
     },
     {
      "carNo": 2,
      "status": 1,
-     "congestion": 0,
-     "temp": 25,
+     "congestion": 11,
+     "temp": 23,
      "facilities": [],
      "types": [
       3
@@ -34,12 +72,11 @@
     {
      "carNo": 1,
      "status": 1,
-     "congestion": 2,
-     "temp": 25,
+     "congestion": 12,
+     "temp": 22,
      "facilities": [
       1,
-      2,
-      4
+      2
      ],
      "types": []
     }
