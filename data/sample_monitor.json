@@ -1,0 +1,49 @@
+{
+ "1504H": [
+  {
+   "cars": [
+    {
+     "carNo": 4,
+     "status": 1,
+     "congestion": 0,
+     "temp": 24,
+     "facilities": [
+      1,
+      2
+     ],
+     "types": []
+    },
+    {
+     "carNo": 3,
+     "status": 1,
+     "congestion": 0,
+     "temp": 24,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 2,
+     "status": 1,
+     "congestion": 0,
+     "temp": 25,
+     "facilities": [],
+     "types": [
+      3
+     ]
+    },
+    {
+     "carNo": 1,
+     "status": 1,
+     "congestion": 2,
+     "temp": 25,
+     "facilities": [
+      1,
+      2,
+      4
+     ],
+     "types": []
+    }
+   ]
+  }
+ ]
+}
