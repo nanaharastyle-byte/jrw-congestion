@@ -320,7 +320,7 @@ function render(){
 
 if __name__ == "__main__":
     now = dt.datetime.now(JST)
-    if 2 <= now.hour < 4:   # 運行のない深夜は取得しない
+    if 2 <= now.hour < 4 and os.environ.get("FORCE") != "true":   # 深夜は取得しない（手動実行時は除く）
         print("深夜帯のためスキップ")
         sys.exit(0)
     build_report(collect(now))
