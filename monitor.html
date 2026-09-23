@@ -44,7 +44,7 @@ td{padding:4px;border-bottom:1px solid var(--rule);white-space:nowrap}
 
 
 :root{--ok:#1f8a4c;--warn:#c98a00;--bad:#c23b22;--c-hokurikubiwako:#0072bc;--c-kyoto:#0072bc;--c-nara:#a0783c;--c-sagano:#7b4b94}
-.bar{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.tabsbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .tab{border:2px solid var(--lc);color:var(--lc);background:transparent;border-radius:999px;padding:3px 12px;font-weight:700;font-size:13px}
 .tab[aria-pressed=true]{background:var(--lc);color:#fff}
 .filters{margin-top:8px;display:flex;gap:10px;font-size:13px;color:var(--sub);flex-wrap:wrap;align-items:center}
@@ -67,7 +67,7 @@ section h2{font-size:16px;margin:10px 0 6px;padding-left:8px;border-left:6px sol
 </style></head><body>
 <nav><a href="index.html">統計</a><a href="weather.html">天気×遅延</a><a href="predict.html">予測</a><a href="monitor.html" aria-current="page">在線</a><a href="patrol.html">巡回</a></nav>
 <header><h1>在線モニター</h1><div class="meta" id="meta">読み込み中…</div>
-<div class="bar" id="tabs"></div>
+<div class="tabsbar" id="tabs"></div>
 <div class="filters">
  <select id="sort" aria-label="並べ替え"><option value="crowdDesc">混雑が多い順</option><option value="crowdAsc">混雑が少ない順（記録なし→混雑）</option><option value="delay">遅延が大きい順</option></select>
  <select id="tg" aria-label="種別"><option value="0" selected>特急を除く</option><option value="">特急を含む</option><option value="1">特急のみ</option></select>
@@ -87,6 +87,8 @@ const selected=new Set(Object.keys(LINES));let state=null;
 // GitHubに5分ごとに保存している最新データ（raw.githubusercontent.comは他サイトからの読み込みを許可している）
 const owner=location.hostname.endsWith('.github.io')?location.hostname.split('.')[0]:'nanaharastyle-byte';
 const repo=location.hostname.endsWith('.github.io')?(location.pathname.split('/')[1]||'jrw-congestion'):'jrw-congestion';
+// ▼ Cloudflare Workers の中継URL（例: https://jrw-live.xxxx.workers.dev/live）を '' の中に入れるとリアルタイム表示になります
+const LIVE_URL=new URLSearchParams(location.search).get('live')||'';
 const SRC=location.hostname.endsWith('.github.io')?`https://raw.githubusercontent.com/${owner}/${repo}/main/data/latest.json`:'latest.json';
 $('legend').innerHTML=SHORT.map((s,l)=>l?'<span><span class="sw" style="background:var(--l'+l+')"></span>'+s+'</span>':'').join('');
 for(const[k,v]of Object.entries(LINES)){const b=document.createElement('button');b.className='tab';b.textContent=v;
@@ -121,12 +123,48 @@ function render(){
   if(!tr.length)html+='<div class="summary">該当する列車はありません</div>';
   for(const t of tr)html+=trainHtml(t,d.st);html+='</section>'}
  $('out').innerHTML=html}
+// データの取り方（上から順に試す）
+// 1) JRから直接（ブラウザからの読み込みが許可されていれば本当のリアルタイム）
+// 2) 中継URL（LIVE_URLを設定した場合）
+// 3) GitHubのliveブランチ（live.ymlが1分ごとに更新）をGitHub APIで読む
+// 4) 5分ごとの記録（data/latest.json）
+const JR='https://www.train-guide.westjr.co.jp/api/v3/';
+let directOK=null,stCache={},etag=null,ghCache=null;
+async function fetchDirect(){
+ if(directOK===false)throw new Error('direct blocked');
+ try{const get=n=>fetch(JR+n,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(n);return r.json()});
+  const mon=(await get('trainmonitorinfo.json')).trains||{},lines={},m={};
+  for(const k of Object.keys(LINES)){const t=await get(k+'.json');
+   if(!stCache[k]){const s=await get(k+'_st.json');stCache[k]={};(s.stations||[]).forEach(x=>{if(x.info)stCache[k][x.info.code]=x.info.name})}
+   lines[k]={st:stCache[k],trains:(t.trains||[]).map(x=>({...x,dest:x.dest?.text??x.dest??''}))};
+   for(const x of t.trains||[])if(mon[x.no])m[x.no]=mon[x.no].flatMap(u=>(u.cars||[]).map(c=>[c.carNo,c.congestion,c.temp]))}
+  const d=new Date(Date.now()+9*3600e3).toISOString();directOK=true;
+  return{t:d.slice(0,10)+' '+d.slice(11,19),lines,monitor:m,errors:[]}}
+ catch(e){directOK=false;throw e}}
+async function fetchRelay(){
+ if(!LIVE_URL)throw new Error('no relay');
+ const r=await fetch(LIVE_URL,{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);
+ const j=await r.json();if(!j.lines||!Object.keys(j.lines).length)throw new Error('empty');return j}
+async function fetchGithub(){
+ const h={'Accept':'application/vnd.github.raw+json'};if(etag&&ghCache)h['If-None-Match']=etag;
+ const r=await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/latest.json?ref=live`,{headers:h,cache:'no-store'});
+ if(r.status===304&&ghCache)return ghCache;          // 変化なし（回数制限に数えられない）
+ if(!r.ok)throw new Error('GitHub '+r.status);
+ etag=r.headers.get('ETag');ghCache=await r.json();return ghCache}
+const ageSec=s=>{const ts=s.t.length===16?s.t+':00':s.t;return Math.max(0,Math.round((Date.now()-new Date(ts.replace(' ','T')+'+09:00'))/1000))};
 async function load(){
- try{const r=await fetch(SRC+'?t='+Date.now(),{cache:'no-store'});state=await r.json();
-  try{const i=await (await fetch('stats/index.json',{cache:'no-store'})).json();if(i.T)T=i.T}catch(e){}
-  const age=Math.round((Date.now()-new Date(state.t.replace(' ','T')+':00+09:00'))/60000);
-  $('meta').textContent=`データ時刻 ${state.t}（${age}分前・約5分ごとに更新）　リアルタイムはScriptable版で`;render()}
- catch(e){$('meta').textContent='最新データを読み込めませんでした';$('out').innerHTML='<div class="empty">data/latest.json がまだありません。次の記録（5分ごと）の後に表示されます。</div>'}}
+ let mode=null;
+ for(const[name,fn]of[['direct',fetchDirect],['relay',fetchRelay],['github',fetchGithub]]){
+  try{const s=await fn();if(name==='github'&&ageSec(s)>600)throw new Error('old');state=s;mode=name;break}catch(e){}}
+ if(!mode){try{state=await (await fetch(SRC+'?t='+Date.now(),{cache:'no-store'})).json();mode='snap'}
+  catch(e){$('meta').textContent='データを読み込めませんでした';$('out').innerHTML='<div class="empty">データがまだありません。しばらくしてから開き直してください。</div>';setTimeout(load,60000);return}}
+ try{const i=await (await fetch('stats/index.json',{cache:'no-store'})).json();if(i.T)T=i.T}catch(e){}
+ const a=ageSec(state),ts=state.t.length===16?state.t+':00':state.t;
+ $('meta').textContent={direct:`🟢 リアルタイム（JRから直接・30秒ごと）　${ts.slice(11)}時点`,
+  relay:`🟢 リアルタイム（中継・30秒ごと）　${ts.slice(11)}時点`,
+  github:`🟢 ほぼリアルタイム（GitHub経由・約1分ごと）　${ts.slice(11)}時点（${a}秒前）`+(state.jrUpdateSec?`　JR側の更新間隔 約${state.jrUpdateSec}秒・記録間隔 ${state.intervalSec}秒`:''),
+  snap:`🟡 ${state.t}のデータ（${Math.round(a/60)}分前・5分ごとの記録）`}[mode];
+ render();setTimeout(load,{direct:30000,relay:30000,github:70000,snap:60000}[mode])}
 ['sort','tg','onlyData','onlyDelay'].forEach(id=>$(id).onchange=render);
-load();setInterval(load,60000);
+load();
 </script></body></html>
