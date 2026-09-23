@@ -61,6 +61,7 @@ td{padding:4px;border-bottom:1px solid var(--rule);white-space:nowrap}
   <select id="hr" aria-label="時間帯"><option value="">全時間帯</option><option value="5-9">朝 5〜9時台</option><option value="10-15">昼 10〜15時台</option><option value="16-19">夕 16〜19時台</option><option value="20-24">夜 20時台以降</option></select>
   <select id="lv" aria-label="混雑レベル"><option value="6">大変多く以上</option><option value="7">とても混雑のみ</option><option value="5">多く以上</option><option value="4">吊り革以上</option></select>
   <select id="split" aria-label="区間の分け方"><option value="car">区間×号車</option><option value="sec">区間のみ</option></select>
+  <select id="tg" aria-label="種別"><option value="">特急を含む</option><option value="0">特急を除く</option><option value="1">特急のみ</option></select>
  </div>
  <div class="seg" role="group" aria-label="表示">
   <button data-v="pat" aria-pressed="true">混雑パターン</button><button data-v="sec" aria-pressed="false">混雑区間</button><button data-v="train" aria-pressed="false">混雑列車</button><button data-v="heat" aria-pressed="false">時間×号車</button>
@@ -81,6 +82,8 @@ const DIR={"0":"上り","1":"下り"},DT=['平日','土休日'];
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const hm=m=>Math.floor(m/60)+':'+String(m%60).padStart(2,'0');
+const isExp=typ=>String(typ).includes('特急')?1:0;
+function tgOK(v){const t=$('tg').value;return t===''||+t===v}
 const pct=(a,q)=>{const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.floor(q*(s.length-1)+.5))]};
 let IDX=null,D=null,view='pat';
 const FOOT={
@@ -108,15 +111,15 @@ async function loadPeriod(){
  $('out').innerHTML='<div class="empty">読み込み中…</div>';
  D=await (await fetch('stats/'+$('period').value+'.json',{cache:'no-store'})).json();
  D.secMin=D.secMin||[];D.pat=D.pat||[];
- D.minIdx={};for(const[li,d,s,car,dt,a]of D.secMin)(D.minIdx[[li,d,s,dt].join('|')]||(D.minIdx[[li,d,s,dt].join('|')]=[])).push([car,a]);
+ D.minIdx={};for(const[li,d,s,car,dt,tg,a]of D.secMin)(D.minIdx[[li,d,s,dt].join('|')]||(D.minIdx[[li,d,s,dt].join('|')]=[])).push([car,tg,a]);
  render();
 }
 function hrOK(h){const v=$('hr').value;if(!v)return true;const[a,b]=v.split('-').map(Number);return h>=a&&h<=b}
 function secRows(){const line=$('line').value,dt=$('dt').value;
- return D.sec.filter(r=>(!line||D.L[r[0]]===line)&&(dt===''||r[5]==dt)&&hrOK(r[4]))}
+ return D.sec.filter(r=>(!line||D.L[r[0]]===line)&&(dt===''||r[5]==dt)&&hrOK(r[4])&&tgOK(r[6]))}
 function tally(h,min,c){let all=0,hit=0;for(let i=0;i<h.length;i+=2){const l=lvOf(h[i]),v=h[i+1];all+=v;if(l>=min)hit+=v;if(c)c[l]+=v}return[all,hit]}
 function renderDist(rows){
- const c=Array(8).fill(0);let n=0;for(const r of rows)n+=tally(r[6],8,c)[0];
+ const c=Array(8).fill(0);let n=0;for(const r of rows)n+=tally(r[7],8,c)[0];
  $('dist').innerHTML=n?c.map((v,l)=>l&&v?`<i style="width:${v/n*100}%;background:var(--l${l})" title="${LBL[l]}"></i>`:'').join(''):'';
  $('legend').innerHTML=c.map((v,l)=>l?`<span><span class="sw" style="background:var(--l${l})"></span>${SHORT[l]} ${n?Math.round(v/n*100):0}%</span>`:'').join('')+`<span>計 ${n}件</span>`;
 }
@@ -128,7 +131,7 @@ function secPath(a,b){a=D.S[a];b=D.S[b];return a===b?esc(a):esc(a)+' → '+esc(b
 
 function renderPat(min){
  const line=$('line').value,dt=$('dt').value;
- const list=D.pat.filter(p=>{const m=D.tmeta[p[0]];return p[3]===Math.min(7,Math.max(4,min))&&m&&(!line||m[0]===line)&&(dt===''||p[2]==dt)&&hrOK(Math.floor(p[6]/60))})
+ const list=D.pat.filter(p=>{const m=D.tmeta[p[0]];return p[3]===Math.min(7,Math.max(4,min))&&m&&tgOK(isExp(m[1]))&&(!line||m[0]===line)&&(dt===''||p[2]==dt)&&hrOK(Math.floor(p[6]/60))})
   .sort((a,b)=>b[4]-a[4]||b[4]/b[5]-a[4]/a[5]||b[11]-a[11]).slice(0,80);
  if(!list.length)return '<div class="empty">条件に合う混雑パターンはまだありません</div>';
  return '<h2>混雑パターン（いつ・どこで・何号車）</h2>'+list.map((p,i)=>{const[no,car,dty,L,dh,dtot,s,e,ss,es,ps,mx,avg]=p,m=D.tmeta[no];
@@ -138,19 +141,19 @@ function renderPat(min){
 }
 function renderSec(rows,min){
  const byCar=$('split').value==='car',dt=$('dt').value,g={};
- for(const[li,d,s,car,h,dty,hs]of rows){const k=[li,d,s,byCar?car:''].join('|');
+ for(const[li,d,s,car,h,dty,tg,hs]of rows){const k=[li,d,s,byCar?car:''].join('|');
   const o=g[k]||(g[k]={li,d,s,car,hit:0,all:0});const[a,x]=tally(hs,min);o.all+=a;o.hit+=x}
  const list=Object.values(g).filter(o=>o.hit).sort((a,b)=>b.hit-a.hit||b.hit/b.all-a.hit/a.all).slice(0,60);
  if(!list.length)return '<div class="empty">条件に合う混雑の記録はありません</div>';
  return '<h2>混雑区間ランキング</h2>'+list.map((o,i)=>{
-  const mins=[];for(const dty of dt===''?[0,1]:[+dt])for(const[car,a]of D.minIdx[[o.li,o.d,o.s,dty].join('|')]||[]){
-   if(byCar&&car!==o.car)continue;for(let j=0;j<a.length;j+=2)if(lvOf(a[j])>=min&&hrOK(Math.floor(a[j+1]/60)))mins.push(a[j+1])}
+  const mins=[];for(const dty of dt===''?[0,1]:[+dt])for(const[car,tg,a]of D.minIdx[[o.li,o.d,o.s,dty].join('|')]||[]){
+   if((byCar&&car!==o.car)||!tgOK(tg))continue;for(let j=0;j<a.length;j+=2)if(lvOf(a[j])>=min&&hrOK(Math.floor(a[j+1]/60)))mins.push(a[j+1])}
   const when=mins.length?`よく混む時間 ${hm(pct(mins,.1))}〜${hm(pct(mins,.9))}`:'';
   return item(i,esc(D.S[o.s])+(byCar?`　${o.car}号車`:''),when,`${IDX.lines[D.L[o.li]]} ${DIR[o.d]??''}`,o.hit,o.all,list[0].hit,Math.max(min,6))}).join('');
 }
 function renderTrain(min){
  const line=$('line').value,dt=$('dt').value,g={};
- for(const[no,car,d,hs]of D.trn){const m=D.tmeta[no];if(!m)continue;
+ for(const[no,car,d,hs]of D.trn){const m=D.tmeta[no];if(!m||!tgOK(isExp(m[1])))continue;
   if(line&&m[0]!==line)continue;if(dt!==''&&d!=dt)continue;if(!hrOK(m[4]))continue;
   const k=no+'|'+car;const o=g[k]||(g[k]={no,car,hit:0,all:0});const[a,x]=tally(hs,min);o.all+=a;o.hit+=x}
  const list=Object.values(g).filter(o=>o.hit).sort((a,b)=>b.hit-a.hit||b.hit/b.all-a.hit/a.all).slice(0,60);
@@ -166,7 +169,7 @@ function renderHeat(rows,min){
  if(!lines.length)return '<div class="empty">データがありません</div>';
  const hl=$('hline')?.value&&lines.includes($('hline').value)?$('hline').value:lines[0];
  const hd=$('hdir')?.value??'1',c={};let maxCar=0;const hours=new Set();
- for(const[li,d,s,car,h,dt,hs]of rows){if(D.L[li]!==hl||String(d)!==hd)continue;
+ for(const[li,d,s,car,h,dt,tg,hs]of rows){if(D.L[li]!==hl||String(d)!==hd)continue;
   const k=h+'|'+car;const o=c[k]||(c[k]={hit:0,all:0});const[a,x]=tally(hs,min);o.all+=a;o.hit+=x;maxCar=Math.max(maxCar,car);hours.add(h)}
  const hs=[...hours].sort((a,b)=>a-b);
  let t='<div class="row2"><select id="hline">'+lines.map(l=>`<option value="${l}"${l===hl?' selected':''}>${IDX.lines[l]}</option>`).join('')+
@@ -187,7 +190,7 @@ function render(){
 }
 document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{view=b.dataset.v;
  document.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed',x===b));render()});
-['line','dt','hr','lv','split'].forEach(id=>$(id).onchange=render);
+['line','dt','hr','lv','split','tg'].forEach(id=>$(id).onchange=render);
 $('period').onchange=loadPeriod;
 init();
 </script></body></html>
