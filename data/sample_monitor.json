@@ -1,46 +1,39 @@
 {
- "100C": [
+ "1001M": [
   {
    "cars": [
     {
-     "carNo": 7,
+     "carNo": 9,
      "status": 1,
-     "congestion": 34,
-     "temp": 22,
+     "congestion": 33,
+     "temp": 25,
      "facilities": [
-      1,
-      2
+      3,
+      5
      ],
      "types": []
     },
     {
-     "carNo": 6,
+     "carNo": 8,
      "status": 1,
-     "congestion": 17,
-     "temp": 22,
-     "facilities": [],
-     "types": [
-      3
-     ]
-    },
-    {
-     "carNo": 5,
-     "status": 1,
-     "congestion": 15,
-     "temp": 22,
-     "facilities": [],
-     "types": [
-      4
-     ]
-    },
-    {
-     "carNo": 4,
-     "status": 1,
-     "congestion": 49,
-     "temp": 23,
+     "congestion": 25,
+     "temp": 25,
      "facilities": [
-      1,
-      2
+      3,
+      4,
+      5
+     ],
+     "types": []
+    },
+    {
+     "carNo": 7,
+     "status": 1,
+     "congestion": 24,
+     "temp": 26,
+     "facilities": [
+      3,
+      4,
+      5
      ],
      "types": []
     }
@@ -49,35 +42,51 @@
   {
    "cars": [
     {
+     "carNo": 6,
+     "status": 1,
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 5,
+     "status": 1,
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 4,
+     "status": 1,
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
+     "types": []
+    },
+    {
      "carNo": 3,
      "status": 1,
-     "congestion": 59,
-     "temp": 22,
-     "facilities": [
-      1,
-      2
-     ],
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
      "types": []
     },
     {
      "carNo": 2,
      "status": 1,
-     "congestion": 47,
-     "temp": 22,
+     "congestion": -1,
+     "temp": -1,
      "facilities": [],
-     "types": [
-      3
-     ]
+     "types": []
     },
     {
      "carNo": 1,
      "status": 1,
-     "congestion": 63,
-     "temp": 22,
-     "facilities": [
-      1,
-      2
-     ],
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
      "types": []
     }
    ]
