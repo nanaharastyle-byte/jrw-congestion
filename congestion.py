@@ -15,8 +15,10 @@ JR西日本 車両別混雑ロガー ＋ 天気・遅延・混雑予測
 """
 import csv
 import datetime as dt
+import bisect
 import functools
 import glob
+import gzip
 import json
 import os
 import shutil
@@ -47,6 +49,7 @@ FORECAST_AREAS = {"hokurikubiwako": ("250000", "250010"), "kyoto": ("260000", "2
                   "nara": ("260000", "260010"), "sagano": ("260000", "260010")}
 
 RAW, COND, STATS, SITE = "data/raw", "data/cond", "data/stats", "_site"
+DB_RAW = os.environ.get("DB_RAW", "/tmp/db/raw")   # live.py が30秒ごとに記録したデータ（liveブランチから取り出す）
 RAW_KEEP_DAYS = 75       # 生データの保存日数
 PREDICT_DAYS = 56        # 予測に使う直近の日数
 TIMELINE_DAYS = 14       # 横並びタイムラインに出す日数
@@ -169,6 +172,20 @@ def forecast_pops():
 
 
 # ================= 収集 =================
+def live_fresh(now):
+    """live.py（30秒ごとの記録）が直近10分以内に動いていれば True"""
+    repo, token = os.environ.get("GITHUB_REPOSITORY"), os.environ.get("GITHUB_TOKEN")
+    if not repo or not token:
+        return False
+    try:
+        req = urllib.request.Request(f"https://api.github.com/repos/{repo}/contents/latest.json?ref=live",
+                                     headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github.raw+json"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            t = json.loads(r.read().decode("utf-8"))["t"]
+        return (now - dt.datetime.fromisoformat(t).replace(tzinfo=JST)).total_seconds() < 600
+    except Exception:
+        return False
+
 def append_csv(path, header, rows):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     new = not os.path.exists(path)
@@ -228,8 +245,11 @@ def collect(now):
     if len(errors) == len(LINES):
         print("すべての路線で取得に失敗:\n" + "\n".join(errors), file=sys.stderr)
         sys.exit(1)
-    append_csv(f"{RAW}/{now:%Y-%m-%d}.csv",
-               ["時刻", "路線", "列車番号", "種別", "行先", "方向", "位置", "遅延分", "号車:乗車率:状態:温度"], rows)
+    if live_fresh(now):
+        print("30秒ごとの記録が動いているため、5分ごとの列車記録は省略")
+    else:
+        append_csv(f"{RAW}/{now:%Y-%m-%d}.csv",
+                   ["時刻", "路線", "列車番号", "種別", "行先", "方向", "位置", "遅延分", "号車:乗車率:状態:温度"], rows)
     append_csv(f"{COND}/{now:%Y-%m-%d}.csv",
                ["時刻", "路線", "在線", "遅延1分以上", "遅延5分以上", "遅延10分以上", "最大遅延", "遅延合計",
                 "1時間雨量", "10分雨量", "風速", "気温", "観測時刻", "観測地点"], conds)
@@ -251,27 +271,29 @@ def collect(now):
 @functools.lru_cache(maxsize=None)
 def load_day(ds):
     raw, cond = [], {}
-    p = f"{RAW}/{ds}.csv"
-    if os.path.exists(p):
-        with open(p, encoding="utf-8") as f:
-            r = csv.reader(f)
-            next(r, None)
-            for row in r:
-                if len(row) < 9:
-                    continue
-                tm, line, no, typ, dest, dr, sec, delay, cars = row[:9]
-                cl = []
-                for c in cars.split(";"):
-                    x = c.split(":")
-                    try:
-                        car, pct = int(x[0]), int(x[1])
-                    except (ValueError, IndexError):
+    for p in [f"{RAW}/{ds}.csv", f"{DB_RAW}/{ds}.csv.gz"] + sorted(glob.glob(f"{DB_RAW}/{ds}/*.csv.gz")):
+        if not os.path.exists(p):
+            continue
+        with (gzip.open(p, "rt", encoding="utf-8") if p.endswith(".gz") else open(p, encoding="utf-8")) as f:
+                r = csv.reader(f)
+                next(r, None)
+                for row in r:
+                    if len(row) < 9:
                         continue
-                    if pct >= 0:
-                        cl.append((car, pct))
-                if cl:
-                    raw.append((tm, int(tm[:2]) * 60 + int(tm[3:5]), line, no, typ, dest,
-                                int(dr) if dr.isdigit() else 0, sec, int(num(delay) or 0), tuple(cl)))
+                    tm, line, no, typ, dest, dr, sec, delay, cars = row[:9]
+                    cl = []
+                    for c in cars.split(";"):
+                        x = c.split(":")
+                        try:
+                            car, pct = int(x[0]), int(x[1])
+                        except (ValueError, IndexError):
+                            continue
+                        if pct >= 0:
+                            cl.append((car, pct))
+                    if cl:
+                        raw.append((tm, int(tm[:2]) * 60 + int(tm[3:5]), line, no, typ, dest,
+                                    int(dr) if dr.isdigit() else 0, sec, int(num(delay) or 0), tuple(cl)))
+    raw.sort(key=lambda r: r[0])                 # 5分ごと・30秒ごとの記録を時刻順に並べる
     p = f"{COND}/{ds}.csv"
     if os.path.exists(p):
         with open(p, encoding="utf-8") as f:
@@ -286,6 +308,23 @@ def load_day(ds):
     return raw, cond
 
 
+@functools.lru_cache(maxsize=None)
+def cond_index(ds):
+    idx = defaultdict(lambda: ([], []))
+    for (tm, line), c in sorted(load_day(ds)[1].items()):
+        m = int(tm[:2]) * 60 + int(tm[3:5])
+        idx[line][0].append(m)
+        idx[line][1].append(c)
+    return idx
+
+
+def cond_at(ds, line, mi):
+    """その時刻の直前（10分以内）の天気・遅延の記録"""
+    ms, cs = cond_index(ds).get(line, ([], []))
+    i = bisect.bisect_right(ms, mi) - 1
+    return cs[i] if i >= 0 and mi - ms[i] <= 10 else None
+
+
 def passages(raw):
     """同じ列車が同じ区間にいる間は1回だけ返す"""
     last = {}
@@ -297,7 +336,9 @@ def passages(raw):
 
 
 def all_dates():
-    ds = {os.path.basename(p)[:10] for p in glob.glob(f"{RAW}/*.csv") + glob.glob(f"{COND}/*.csv")}
+    ds = {os.path.basename(p)[:10] for p in glob.glob(f"{RAW}/*.csv") + glob.glob(f"{COND}/*.csv")
+          + glob.glob(f"{DB_RAW}/*.csv.gz")}
+    ds |= {os.path.basename(os.path.dirname(p)) for p in glob.glob(f"{DB_RAW}/*/*.csv.gz")}
     return sorted(ds)
 
 
@@ -376,7 +417,7 @@ def aggregate(pid, days):
             org = si(last_stop[no]) if no in last_stop else -1     # 混雑の起点（直前の停車駅）
             meta = tmeta.setdefault(no, {"l": line, "t": typ, "d": dest, "r": dr, "h": Counter()})
             meta["h"][hr] += 1
-            c = cond.get((tm, line))
+            c = cond_at(ds, line, mi)
             for car, pct in cars:
                 b = min(pct // 10, MAX_BIN)
                 lv = lv_of(pct)
@@ -511,7 +552,7 @@ def predict(dates, now):
         raw, cond = load_day(ds)
         for tm, mi, line, no, typ, dest, dr, secn, delay, cars in passages(raw):
             tmeta.setdefault(no, [line, typ, dest, dr])
-            c = cond.get((tm, line))
+            c = cond_at(ds, line, mi)
             rainy = bool(c and c["rain"] is not None and c["rain"] >= 1.0)
             for car, pct in cars:
                 lv = lv_of(pct)
