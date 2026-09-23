@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>在線モニター</title>
+<style>
+:root{--bg:#eef2f6;--paper:#fff;--ink:#1a2230;--sub:#5b6577;--rule:#d5dce6;--acc:#0072bc;
+ --l1:#6fb3e8;--l2:#58a7a4;--l3:#1f9a86;--l4:#9cc54a;--l5:#c9982c;--l6:#b8407e;--l7:#3d3fa0;--rain:#2f7fd1;--wind:#1f9a86;--delay:#c23b22}
+@media (prefers-color-scheme:dark){:root{--bg:#141a22;--paper:#1d2530;--ink:#e8edf3;--sub:#9aa6b8;--rule:#2e3947}}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px;line-height:1.5;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+nav{display:flex;background:var(--acc)}
+nav a{flex:1;text-align:center;color:#fff;text-decoration:none;font-size:12px;font-weight:700;padding:8px 0;opacity:.75}
+nav a[aria-current=page]{opacity:1;box-shadow:inset 0 -3px 0 #fff}
+header{background:var(--paper);border-bottom:1px solid var(--rule);padding:12px}
+h1{font-size:18px;margin:0}
+.meta{color:var(--sub);font-size:12px;margin-top:2px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+select{width:100%;font-size:14px;padding:6px;border-radius:6px;border:1px solid var(--rule);background:var(--bg);color:var(--ink)}
+.seg{display:flex;margin-top:10px;border:1px solid var(--acc);border-radius:8px;overflow:hidden}
+.seg button{flex:1;border:0;background:transparent;color:var(--acc);font-size:13px;font-weight:700;padding:7px 0}
+.seg button[aria-pressed=true]{background:var(--acc);color:#fff}
+button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #f5b400;outline-offset:1px}
+main{padding:10px;max-width:760px;margin:0 auto}
+h2{font-size:15px;margin:16px 0 6px}
+.item{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:9px 10px;margin-bottom:6px;display:grid;grid-template-columns:1.8em 1fr auto;gap:8px;align-items:center}
+.rank{font-weight:700;color:var(--sub);text-align:right}
+.ttl{font-weight:700}
+.sub{color:var(--sub);font-size:12px}
+.when{font-size:13px;font-weight:700;color:var(--acc)}
+.num{text-align:right;font-weight:700;font-size:18px;white-space:nowrap}
+.num small{display:block;font-size:11px;color:var(--sub);font-weight:400}
+.bar{height:5px;border-radius:3px;background:var(--rule);margin-top:4px;overflow:hidden}
+.bar i{display:block;height:100%}
+.note{font-size:12px;color:var(--sub);margin:8px 0}
+.warn{background:#fff4d6;color:#6b4c00;border-radius:6px;padding:8px;font-size:13px;margin:8px 0}
+.empty{color:var(--sub);padding:24px 0;text-align:center}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:10px;margin-bottom:8px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;font-size:12px;width:100%}
+th{color:var(--sub);font-weight:400;padding:4px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--rule)}
+td{padding:4px;border-bottom:1px solid var(--rule);white-space:nowrap}
+.chip{display:inline-block;font-size:11px;border-radius:10px;padding:0 7px;margin:3px 4px 0 0;background:var(--bg);color:var(--sub)}
+
+
+:root{--ok:#1f8a4c;--warn:#c98a00;--bad:#c23b22;--c-hokurikubiwako:#0072bc;--c-kyoto:#0072bc;--c-nara:#a0783c;--c-sagano:#7b4b94}
+.bar{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.tab{border:2px solid var(--lc);color:var(--lc);background:transparent;border-radius:999px;padding:3px 12px;font-weight:700;font-size:13px}
+.tab[aria-pressed=true]{background:var(--lc);color:#fff}
+.filters{margin-top:8px;display:flex;gap:10px;font-size:13px;color:var(--sub);flex-wrap:wrap;align-items:center}
+.filters select{width:auto}
+section h2{font-size:16px;margin:10px 0 6px;padding-left:8px;border-left:6px solid var(--lc)}
+.summary{color:var(--sub);font-size:13px;margin:0 0 8px 14px}
+.train{background:var(--paper);border:1px solid var(--rule);border-left:6px solid var(--lc);border-radius:6px;padding:9px 10px;margin-bottom:8px}
+.row{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.type{font-weight:700;color:var(--lc)}.dest{font-weight:700;font-size:16px}.no{color:var(--sub);font-size:12px}
+.delay{margin-left:auto;font-weight:700;padding:1px 8px;border-radius:4px;font-size:13px;color:#fff}
+.pos{color:var(--sub);font-size:13px}
+.hot{margin-top:6px;font-size:13px;font-weight:700}
+.hot span{display:inline-block;border-radius:4px;padding:0 6px;margin:2px 4px 0 0;color:#fff;font-weight:700}
+.cars{display:flex;gap:3px;margin-top:6px;flex-wrap:wrap}
+.car{min-width:38px;text-align:center;border-radius:3px;padding:2px 3px;font-size:11px;color:#fff}.car b{display:block;font-size:11px}
+.l1,.l4{color:#1a2230}
+.nodata{font-size:12px;color:var(--sub);margin-top:4px}
+.legend{display:flex;flex-wrap:wrap;gap:3px 8px;font-size:11px;color:var(--sub);margin-top:6px}
+.sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:2px}
+</style></head><body>
+<nav><a href="index.html">統計</a><a href="weather.html">天気×遅延</a><a href="predict.html">予測</a><a href="monitor.html" aria-current="page">在線</a><a href="patrol.html">巡回</a></nav>
+<header><h1>在線モニター</h1><div class="meta" id="meta">読み込み中…</div>
+<div class="bar" id="tabs"></div>
+<div class="filters">
+ <select id="sort" aria-label="並べ替え"><option value="crowdDesc">混雑が多い順</option><option value="crowdAsc">混雑が少ない順（記録なし→混雑）</option><option value="delay">遅延が大きい順</option></select>
+ <select id="tg" aria-label="種別"><option value="0" selected>特急を除く</option><option value="">特急を含む</option><option value="1">特急のみ</option></select>
+ <label><input type="checkbox" id="onlyData"> 混雑データありのみ</label>
+ <label><input type="checkbox" id="onlyDelay"> 遅延のみ</label>
+</div><div class="legend" id="legend"></div></header>
+<main id="out"><div class="empty">読み込み中…</div></main>
+<script>
+let T=[40,60,80,100,130,160];
+const LBL=['','空席があります','ほぼ、席はうまっています','ゆったり立つことができます','吊り革につかまることができます','多くの方が乗っています','大変多くの方が乗っています','とても混雑しています'];
+const SHORT=['','空席','ほぼ満席','ゆったり立','吊り革','多い','大変多い','とても混雑'];
+const lvOf=p=>{let l=1;for(const t of T)if(p>=t)l++;return l};
+const LINES={hokurikubiwako:"琵琶湖線",kyoto:"JR京都線",nara:"奈良線",sagano:"嵯峨野線"};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const selected=new Set(Object.keys(LINES));let state=null;
+// GitHubに5分ごとに保存している最新データ（raw.githubusercontent.comは他サイトからの読み込みを許可している）
+const owner=location.hostname.endsWith('.github.io')?location.hostname.split('.')[0]:'nanaharastyle-byte';
+const repo=location.hostname.endsWith('.github.io')?(location.pathname.split('/')[1]||'jrw-congestion'):'jrw-congestion';
+const SRC=location.hostname.endsWith('.github.io')?`https://raw.githubusercontent.com/${owner}/${repo}/main/data/latest.json`:'latest.json';
+$('legend').innerHTML=SHORT.map((s,l)=>l?'<span><span class="sw" style="background:var(--l'+l+')"></span>'+s+'</span>':'').join('');
+for(const[k,v]of Object.entries(LINES)){const b=document.createElement('button');b.className='tab';b.textContent=v;
+ b.style.setProperty('--lc','var(--c-'+k+')');b.setAttribute('aria-pressed','true');
+ b.onclick=()=>{selected.has(k)?selected.delete(k):selected.add(k);b.setAttribute('aria-pressed',selected.has(k));render()};$('tabs').appendChild(b)}
+function posText(p,m){if(!p)return'位置不明';const[a,b]=String(p).split('_');if(m[a]&&m[b])return m[a]+'〜'+m[b]+' 間';if(m[a])return m[a]+' 付近';return'位置コード '+p}
+function carsOf(no){return(state.monitor[no]||[]).filter(c=>c[1]>=0).map(c=>({carNo:c[0],congestion:c[1]})).sort((a,b)=>a.carNo-b.carNo)}
+function delayBadge(d){d=Number(d)||0;const c=d===0?'var(--ok)':d<5?'var(--warn)':'var(--bad)';return'<span class="delay" style="background:'+c+'">'+(d===0?'定刻':d+'分遅れ')+'</span>'}
+function trainHtml(t,m){
+ const cars=t._cars,dir=t.direction==0?'上り':t.direction==1?'下り':'';
+ let h='<div class="train"><div class="row"><span class="type">'+esc(t.displayType)+'</span><span class="dest">'+esc(t.dest)+'行</span>'
+  +(t.nickname?'<span>'+esc(t.nickname)+'</span>':'')+'<span class="no">'+esc(t.no)+' '+dir+(t.numberOfCars?' '+t.numberOfCars+'両':'')+'</span>'+delayBadge(t.delayMinutes)+'</div>'
+  +'<div class="pos">'+esc(posText(t.pos,m))+(t.typeChange?'　'+esc(t.typeChange):'')+'</div>';
+ if(!cars.length)return h+'<div class="nodata">混雑情報なし（この列車は混雑データの提供対象外）</div></div>';
+ const hot=cars.filter(c=>lvOf(c.congestion)>=5).sort((a,b)=>b.congestion-a.congestion);
+ if(hot.length)h+='<div class="hot">混雑号車: '+hot.map(c=>{const l=lvOf(c.congestion);return'<span style="background:var(--l'+l+')">'+c.carNo+'号車 '+SHORT[l]+' '+c.congestion+'%</span>'}).join('')+'</div>';
+ else{const mx=cars.reduce((a,b)=>b.congestion>a.congestion?b:a);h+='<div class="hot" style="font-weight:400;color:var(--sub)">混雑号車なし（最大 '+mx.carNo+'号車 '+SHORT[lvOf(mx.congestion)]+' '+mx.congestion+'%）</div>'}
+ return h+'<div class="cars">'+cars.map(c=>{const l=lvOf(c.congestion);return'<div class="car l'+l+'" style="background:var(--l'+l+')" title="'+LBL[l]+'"><b>'+c.carNo+'号車</b>'+c.congestion+'%</div>'}).join('')+'</div></div>';
+}
+function render(){
+ if(!state)return;const sort=$('sort').value,tg=$('tg').value,onlyData=$('onlyData').checked,onlyDelay=$('onlyDelay').checked;let html='';
+ if(state.errors&&state.errors.length)html+='<div class="warn">取得エラー: '+esc(state.errors.join(' / '))+'</div>';
+ for(const k of Object.keys(LINES)){if(!selected.has(k))continue;const d=state.lines[k];
+  html+='<section style="--lc:var(--c-'+k+')"><h2>'+LINES[k]+'</h2>';
+  if(!d){html+='<div class="summary">データがありません</div></section>';continue}
+  let tr=d.trains.map(t=>{const cars=carsOf(t.no);return{...t,_cars:cars,_max:cars.length?Math.max(...cars.map(c=>c.congestion)):-1}});
+  if(tg!=='')tr=tr.filter(t=>(String(t.displayType).includes('特急')?1:0)===+tg);
+  const nData=tr.filter(t=>t._max>=0).length,nHot=tr.filter(t=>t._max>=0&&lvOf(t._max)>=6).length,nDelay=tr.filter(t=>Number(t.delayMinutes)>0).length;
+  html+='<div class="summary">在線 '+tr.length+'本／遅延 '+nDelay+'本／混雑データあり '+nData+'本（うち大変多く以上 '+nHot+'本）</div>';
+  if(onlyData)tr=tr.filter(t=>t._max>=0);if(onlyDelay)tr=tr.filter(t=>Number(t.delayMinutes)>0);
+  tr.sort(sort==='crowdDesc'?(a,b)=>b._max-a._max:sort==='crowdAsc'?(a,b)=>a._max-b._max:(a,b)=>(Number(b.delayMinutes)||0)-(Number(a.delayMinutes)||0));
+  if(!tr.length)html+='<div class="summary">該当する列車はありません</div>';
+  for(const t of tr)html+=trainHtml(t,d.st);html+='</section>'}
+ $('out').innerHTML=html}
+async function load(){
+ try{const r=await fetch(SRC+'?t='+Date.now(),{cache:'no-store'});state=await r.json();
+  try{const i=await (await fetch('stats/index.json',{cache:'no-store'})).json();if(i.T)T=i.T}catch(e){}
+  const age=Math.round((Date.now()-new Date(state.t.replace(' ','T')+':00+09:00'))/60000);
+  $('meta').textContent=`データ時刻 ${state.t}（${age}分前・約5分ごとに更新）　リアルタイムはScriptable版で`;render()}
+ catch(e){$('meta').textContent='最新データを読み込めませんでした';$('out').innerHTML='<div class="empty">data/latest.json がまだありません。次の記録（5分ごと）の後に表示されます。</div>'}}
+['sort','tg','onlyData','onlyDelay'].forEach(id=>$(id).onchange=render);
+load();setInterval(load,60000);
+</script></body></html>
