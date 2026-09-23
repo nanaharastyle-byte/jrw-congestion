@@ -53,7 +53,7 @@ TIMELINE_DAYS = 14       # 横並びタイムラインに出す日数
 RAIN_BINS = [0.5, 1, 3, 5, 10, 20, 30]   # 1時間雨量(mm)の区切り
 WIND_BINS = [3, 5, 8, 10, 13, 15, 20]    # 風速(m/s)の区切り
 MAX_BIN = 25
-STATS_VERSION = 3
+STATS_VERSION = 4
 
 
 def is_exp(typ):
@@ -184,6 +184,7 @@ def collect(now):
     monitor = fetch(WEST + "trainmonitorinfo.json").get("trains", {})
     wx_time, wx = fetch_weather()
     rows, conds, seen, errors = [], [], set(), []
+    latest = {"t": now.strftime("%Y-%m-%d %H:%M"), "lines": {}, "monitor": {}, "errors": errors}
     for line in LINES:
         try:
             trains = fetch(WEST + f"{line}.json").get("trains", [])
@@ -192,6 +193,16 @@ def collect(now):
         except Exception as e:
             errors.append(f"{LINES[line]}: {e}")
             continue
+        latest["lines"][line] = {"st": m, "trains": [
+            {**{k: t.get(k) for k in ("no", "pos", "direction", "displayType", "nickname", "delayMinutes",
+                                      "numberOfCars", "typeChange")},
+             "dest": (t.get("dest") or {}).get("text", "") if isinstance(t.get("dest"), dict) else str(t.get("dest") or "")}
+            for t in trains]}
+        for t in trains:
+            u = monitor.get(str(t.get("no", "")))
+            if u:
+                latest["monitor"][str(t.get("no"))] = [[c.get("carNo"), c.get("congestion"), c.get("temp")]
+                                                       for x in u for c in (x.get("cars") or [])]
         delays = [int(t.get("delayMinutes") or 0) for t in trains]
         w = wx.get(line) or []
 
@@ -212,8 +223,8 @@ def collect(now):
             rows.append([hhmm, line, no, t.get("displayType", ""),
                          dest.get("text", "") if isinstance(dest, dict) else str(dest or ""),
                          t.get("direction", ""), section_name(t.get("pos"), m), t.get("delayMinutes", ""),
-                         ";".join(f"{c.get('carNo')}:{c.get('congestion')}:{c.get('status')}:{c.get('temp')}"
-                                  for c in cars)])
+                         ";".join(f"{c.get('carNo')}:{c.get('congestion')}:{c.get('status')}:{c.get('temp')}:"
+                                  + ".".join(str(x) for x in (c.get('types') or [])) for c in cars)])
     if len(errors) == len(LINES):
         print("すべての路線で取得に失敗:\n" + "\n".join(errors), file=sys.stderr)
         sys.exit(1)
@@ -222,6 +233,8 @@ def collect(now):
     append_csv(f"{COND}/{now:%Y-%m-%d}.csv",
                ["時刻", "路線", "在線", "遅延1分以上", "遅延5分以上", "遅延10分以上", "最大遅延", "遅延合計",
                 "1時間雨量", "10分雨量", "風速", "気温", "観測時刻", "観測地点"], conds)
+    with open("data/latest.json", "w", encoding="utf-8") as f:
+        json.dump(latest, f, ensure_ascii=False, separators=(",", ":"))
     if monitor:
         k = next(iter(monitor))
         with open("data/sample_monitor.json", "w", encoding="utf-8") as f:
@@ -330,10 +343,19 @@ def aggregate(pid, days):
             S.append(s)
         return idx[s]
 
+    # 停車駅の推定：同じ列車がその駅で2日以上観測されたら停車駅とみなす
+    stop_days = defaultdict(set)
+    for ds in days:
+        for r in load_day(ds)[0]:
+            if r[7].endswith("駅"):
+                stop_days[(r[3], r[7])].add(ds)
+    is_stop = lambda no, secn: secn.endswith("駅") and len(stop_days.get((no, secn), ())) >= 2
+
     for ds in days:
         d = dt.date.fromisoformat(ds)
         dty = day_type(d)
         raw, cond = load_day(ds)
+        last_stop = {}
         for (tm, line), c in cond.items():
             runs.add(ds + tm)
             if line not in cst:
@@ -349,6 +371,9 @@ def aggregate(pid, days):
             tm, mi, line, no, typ, dest, dr, secn, delay, cars = r
             runs.add(ds + tm)
             hr, s, li, tg = mi // 60, si(secn), L.index(line) if line in L else 0, is_exp(typ)
+            if is_stop(no, secn):
+                last_stop[no] = secn
+            org = si(last_stop[no]) if no in last_stop else -1     # 混雑の起点（直前の停車駅）
             meta = tmeta.setdefault(no, {"l": line, "t": typ, "d": dest, "r": dr, "h": Counter()})
             meta["h"][hr] += 1
             c = cond.get((tm, line))
@@ -360,7 +385,7 @@ def aggregate(pid, days):
                 if b >= 10:
                     tsec[(no, s, car, dty, b)] += 1
                 if lv >= 4:
-                    secmin[(li, dr, s, car, dty, tg)] += [b, mi]
+                    secmin[(li, dr, s, car, dty, tg)] += [b, mi, org]
                 hits = [1, lv >= 5, lv >= 6, lv >= 7]
                 if line in cst:
                     dd = cst[line]["delay"][1 if delay >= 5 else 0]
@@ -381,18 +406,23 @@ def aggregate(pid, days):
         for no, obs in by_train.items():
             obs.sort(key=lambda r: r[1])
             train_days[(no, dty)].add(ds)
+            lst, ls = [], None
+            for r in obs:
+                if is_stop(no, r[7]):
+                    ls = r[7]
+                lst.append(ls)
             for car in sorted({c for r in obs for c, _ in r[9]}):
-                seq = [(r[1], r[7], p) for r in obs for c, p in r[9] if c == car]
+                seq = [(r[1], r[7], p, lst[k]) for k, r in enumerate(obs) for c, p in r[9] if c == car]
                 for Lv in LEVELS:
                     cur = None
-                    for mi, secn, pct in seq + [(None, None, -1)]:
+                    for mi, secn, pct, org in seq + [(None, None, -1, None)]:
                         hit = mi is not None and lv_of(pct) >= Lv
                         if cur and (not hit or mi - cur[1] > 12):
                             eps[(no, car, dty, Lv)].append((ds, *cur))
                             cur = None
                         if hit:
                             if cur is None:
-                                cur = [mi, mi, secn, secn, pct, secn]
+                                cur = [mi, mi, secn, secn, pct, secn, org]
                             else:
                                 cur[1], cur[3] = mi, secn
                                 if pct > cur[4]:
@@ -411,10 +441,12 @@ def aggregate(pid, days):
         total = len(train_days[(no, dty)])
         for cl in clusters:
             mode = lambda i: Counter(x[i] for x in cl).most_common(1)[0][0]
+            orgs = [x[7] for x in cl if x[7]]
             pats.append([no, car, dty, Lv, len(cl), total,
                          int(statistics.median(x[1] for x in cl)), int(statistics.median(x[2] for x in cl)),
                          si(mode(3)), si(mode(4)), si(mode(6)), max(x[5] for x in cl),
-                         round(sum(x[5] for x in cl) / len(cl))])
+                         round(sum(x[5] for x in cl) / len(cl)),
+                         si(Counter(orgs).most_common(1)[0][0]) if orgs else -1])
     ps, pe = period_range(pid)
     return {
         "v": STATS_VERSION, "id": pid, "from": ps.isoformat(), "to": pe.isoformat(),
@@ -422,8 +454,8 @@ def aggregate(pid, days):
         "sec": hist(sec),        # [路線, 方向, 区間, 号車, 時, 平日0/土休日1, 特急1/他0, [bin,回数,...]]
         "trn": hist(trn),        # [列車番号, 号車, 平日0/土休日1, [bin,回数,...]]
         "tsec": hist(tsec),      # [列車番号, 区間, 号車, 平日0/土休日1, [bin,回数,...]]
-        "secMin": [[*k, v] for k, v in secmin.items()],   # [路線,方向,区間,号車,平日/土休日,特急,[bin,分,...]]
-        "pat": pats,  # [列車,号車,平日/土休日,レベル,混んだ日数,走った日数,開始分,終了分,開始区間,終了区間,最混雑区間,最大%,平均%]
+        "secMin": [[*k, v] for k, v in secmin.items()],   # [路線,方向,区間,号車,平日/土休日,特急,[bin,分,起点駅,...]]
+        "pat": pats,  # [列車,号車,平日/土休日,レベル,混んだ日数,走った日数,開始分,終了分,開始区間,終了区間,最混雑区間,最大%,平均%,起点駅]
         "tmeta": {k: [v["l"], v["t"], v["d"], v["r"], v["h"].most_common(1)[0][0]] for k, v in tmeta.items()},
         "cond": cst,
         "rainBins": RAIN_BINS, "windBins": WIND_BINS,
@@ -533,6 +565,59 @@ def predict(dates, now):
     }
 
 
+# ================= 巡回ルート用の観測ダイヤ =================
+def patrol(dates):
+    """列車ごとに、駅の時刻（複数日の中央値）と区間ごとの混雑率を作る"""
+    L = list(LINES)
+    S, idx = [], {}
+
+    def si(s):
+        if s not in idx:
+            idx[s] = len(S)
+            S.append(s)
+        return idx[s]
+
+    data = {}
+    for ds in dates:
+        dty = day_type(dt.date.fromisoformat(ds))
+        raw, _ = load_day(ds)
+        for tm, mi, line, no, typ, dest, dr, secn, delay, cars in passages(raw):
+            tr = data.setdefault((dty, no), {"days": set(), "meta": (typ, dest, dr), "sec": {}})
+            tr["days"].add(ds)
+            x = tr["sec"].setdefault(secn, {"mins": [], "days": set(), "h6": Counter(), "h7": Counter(), "line": Counter()})
+            if ds in x["days"]:
+                continue
+            x["days"].add(ds)
+            x["mins"].append(mi)
+            x["line"][line] += 1
+            for car, p in cars:
+                lv = lv_of(p)
+                if lv >= 6:
+                    x["h6"][car] += 1
+                if lv >= 7:
+                    x["h7"][car] += 1
+    trains = [[], []]
+    for (dty, no), tr in data.items():
+        if len(tr["days"]) < 2:
+            continue                               # 2日以上走っている定期列車だけ
+        stops, crowd = [], []
+        for secn, x in tr["sec"].items():
+            n = len(x["days"])
+            med = int(statistics.median(x["mins"]))
+            li = L.index(x["line"].most_common(1)[0][0]) if x["line"] else 0
+            c6, c7 = x["h6"].most_common(1), x["h7"].most_common(1)
+            crowd.append([med, round(c6[0][1] / n, 2) if c6 else 0, round(c7[0][1] / n, 2) if c7 else 0,
+                          c6[0][0] if c6 else 0, c7[0][0] if c7 else 0, n, li])
+            if secn.endswith("駅") and n >= 2:     # 2日以上その駅で観測＝停車している可能性が高い
+                stops.append([si(secn[:-1]), med, n, li])
+        if len(stops) < 2:
+            continue
+        stops.sort(key=lambda s: s[1])
+        crowd.sort()
+        trains[dty].append([no, *tr["meta"], len(tr["days"]), stops, crowd])
+    return {"S": S, "L": L, "days": len(dates), "from": dates[0] if dates else "", "trains": trains}
+
+
 # ================= 出力 =================
 def report(now):
     today = now.date()
@@ -562,6 +647,8 @@ def report(now):
         json.dump(timeline(dates[-TIMELINE_DAYS:]), f, ensure_ascii=False, separators=(",", ":"))
     with open(f"{SITE}/stats/predict.json", "w", encoding="utf-8") as f:
         json.dump(predict(dates[-PREDICT_DAYS:], now), f, ensure_ascii=False, separators=(",", ":"))
+    with open(f"{SITE}/stats/patrol.json", "w", encoding="utf-8") as f:
+        json.dump(patrol(dates[-PREDICT_DAYS:]), f, ensure_ascii=False, separators=(",", ":"))
     ids = sorted((os.path.basename(p)[:-5] for p in glob.glob(f"{STATS}/*.json")), reverse=True)
     status = {}
     if os.path.exists("data/status.json"):
@@ -573,7 +660,10 @@ def report(now):
     if os.path.exists("data/sample_monitor.json"):
         shutil.copy("data/sample_monitor.json", f"{SITE}/sample_monitor.json")
     here = os.path.dirname(os.path.abspath(__file__))
-    for src, dst in (("stats.html", "index.html"), ("weather.html", "weather.html"), ("predict.html", "predict.html")):
+    for src, dst in (("stats.html", "index.html"), ("weather.html", "weather.html"), ("predict.html", "predict.html"),
+                     ("monitor.html", "monitor.html"), ("patrol.html", "patrol.html"),
+                     ("schools.json", "stats/schools.json"), ("station_notes.json", "stats/station_notes.json"),
+                     ("incidents.json", "stats/incidents.json")):
         if os.path.exists(os.path.join(here, src)):
             shutil.copy(os.path.join(here, src), f"{SITE}/{dst}")
     with open("data/last_publish.txt", "w") as f:
