@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>混雑予測</title>
+<style>
+:root{--bg:#eef2f6;--paper:#fff;--ink:#1a2230;--sub:#5b6577;--rule:#d5dce6;--acc:#0072bc;
+ --l1:#6fb3e8;--l2:#58a7a4;--l3:#1f9a86;--l4:#9cc54a;--l5:#c9982c;--l6:#b8407e;--l7:#3d3fa0;--rain:#2f7fd1;--wind:#1f9a86;--delay:#c23b22}
+@media (prefers-color-scheme:dark){:root{--bg:#141a22;--paper:#1d2530;--ink:#e8edf3;--sub:#9aa6b8;--rule:#2e3947}}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px;line-height:1.5;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+nav{display:flex;background:var(--acc)}
+nav a{flex:1;text-align:center;color:#fff;text-decoration:none;font-size:13px;font-weight:700;padding:8px 0;opacity:.75}
+nav a[aria-current=page]{opacity:1;box-shadow:inset 0 -3px 0 #fff}
+header{background:var(--paper);border-bottom:1px solid var(--rule);padding:12px}
+h1{font-size:18px;margin:0}
+.meta{color:var(--sub);font-size:12px;margin-top:2px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+select{width:100%;font-size:14px;padding:6px;border-radius:6px;border:1px solid var(--rule);background:var(--bg);color:var(--ink)}
+.seg{display:flex;margin-top:10px;border:1px solid var(--acc);border-radius:8px;overflow:hidden}
+.seg button{flex:1;border:0;background:transparent;color:var(--acc);font-size:13px;font-weight:700;padding:7px 0}
+.seg button[aria-pressed=true]{background:var(--acc);color:#fff}
+button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #f5b400;outline-offset:1px}
+main{padding:10px;max-width:760px;margin:0 auto}
+h2{font-size:15px;margin:16px 0 6px}
+.item{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:9px 10px;margin-bottom:6px;display:grid;grid-template-columns:1.8em 1fr auto;gap:8px;align-items:center}
+.rank{font-weight:700;color:var(--sub);text-align:right}
+.ttl{font-weight:700}
+.sub{color:var(--sub);font-size:12px}
+.when{font-size:13px;font-weight:700;color:var(--acc)}
+.num{text-align:right;font-weight:700;font-size:18px;white-space:nowrap}
+.num small{display:block;font-size:11px;color:var(--sub);font-weight:400}
+.bar{height:5px;border-radius:3px;background:var(--rule);margin-top:4px;overflow:hidden}
+.bar i{display:block;height:100%}
+.note{font-size:12px;color:var(--sub);margin:8px 0}
+.warn{background:#fff4d6;color:#6b4c00;border-radius:6px;padding:8px;font-size:13px;margin:8px 0}
+.empty{color:var(--sub);padding:24px 0;text-align:center}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:10px;margin-bottom:8px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;font-size:12px;width:100%}
+th{color:var(--sub);font-weight:400;padding:4px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--rule)}
+td{padding:4px;border-bottom:1px solid var(--rule);white-space:nowrap}
+.chip{display:inline-block;font-size:11px;border-radius:10px;padding:0 7px;margin:3px 4px 0 0;background:var(--bg);color:var(--sub)}
+
+.pnum{text-align:right;font-weight:700;font-size:20px;white-space:nowrap}
+.pnum small{display:block;font-size:11px;font-weight:400;color:var(--sub)}
+.low{opacity:.75}
+</style></head><body>
+<nav><a href="index.html">混雑統計</a><a href="weather.html">天気×遅延</a><a href="predict.html" aria-current="page">混雑予測</a></nav>
+<header>
+ <h1>混雑予測</h1><div class="meta" id="meta">読み込み中…</div>
+ <div class="grid">
+  <select id="date" aria-label="日付"></select>
+  <select id="wx" aria-label="天気"><option value="auto">天気＝予報の降水確率</option><option value="dry">天気＝晴れ・くもり</option><option value="rain">天気＝雨</option></select>
+  <select id="line" aria-label="路線"></select>
+  <select id="hr" aria-label="時間帯"><option value="">全時間帯</option><option value="5-9">朝 5〜9時台</option><option value="10-15">昼 10〜15時台</option><option value="16-19">夕 16〜19時台</option><option value="20-24">夜 20時台以降</option></select>
+  <select id="lv" aria-label="混雑レベル"><option value="6">大変多く以上</option><option value="7">とても混雑</option><option value="5">多く以上</option></select>
+  <select id="th" aria-label="確率"><option value="0.5">確率50%以上</option><option value="0.3">確率30%以上</option><option value="0.7">確率70%以上</option></select>
+  <select id="dl" aria-label="遅延"><option value="0">ダイヤ通り</option><option value="1">5分以上の遅れあり</option></select>
+  <select id="sort" aria-label="並べ替え"><option value="time">時刻順</option><option value="prob">確率順</option></select>
+ </div>
+</header>
+<main>
+ <div id="out"><div class="empty">読み込み中…</div></div>
+ <p class="note">予測は過去の記録（直近最大8週間）の統計です。同じ列車番号・号車・区間が過去に何日混んだかを基本に、雨の日・遅延時の混みやすさを路線ごとに掛け合わせています。臨時ダイヤやイベント、事故などは反映されません。</p>
+</main>
+<script>
+let T=[40,60,80,100,130,160];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hm=m=>Math.floor(m/60)+':'+String(m%60).padStart(2,'0');
+const DIR={"0":"上り","1":"下り"},DT=['平日','土休日'],LVN={5:'多く以上',6:'大変多く以上',7:'とても混雑'},WD='日月火水木金土';
+let IDX,P;
+async function init(){
+ try{IDX=await (await fetch('stats/index.json',{cache:'no-store'})).json();P=await (await fetch('stats/predict.json',{cache:'no-store'})).json()}
+ catch(e){$('out').innerHTML='<div class="empty">予測データがまだありません</div>';return}
+ $('meta').textContent=`更新 ${P.built}／過去${P.days}日分の記録から予測`;
+ $('line').innerHTML='<option value="">全路線</option>'+Object.entries(IDX.lines).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+ $('date').innerHTML=P.dates.slice(0,3).map(([d,t],i)=>{const w=WD[new Date(d+'T12:00:00+09:00').getDay()];
+  return `<option value="${d}|${t}">${['今日','明日','明後日'][i]} ${d.slice(5).replace('-','/')}(${w}) ${DT[t]}</option>`}).join('');
+ render();
+}
+function popAt(line,ds,mm){const f=P.pops?.[line];if(!f)return null;const target=new Date(`${ds}T${hm(mm).padStart(5,'0')}:00+09:00`);
+ let best=null;f.t.forEach((t,i)=>{const s=new Date(t);if(s<=target&&target-s<6*3600e3&&f.p[i]!=null)best=f.p[i]/100});return best}
+function prob(r,L,rainP,delayOn){
+ const[no,dty,s,car,n,h5,h6,h7,mm,nr,r5,r6,r7]=r,m=P.tmeta[no],line=m[0];
+ const h={5:h5,6:h6,7:h7}[L],hr={5:r5,6:r6,7:r7}[L],pri=P.prior?.[line]?.[dty]?.[Math.floor(mm/60)];
+ const prior=pri&&pri[0]?pri[L-4]/pri[0]:0,fr=P.rainF?.[line]?.[L]??1,fd=P.delayF?.[line]?.[L]??1,a=2;
+ let pDry,pRain;
+ if(nr>=3){pRain=(hr+a*prior*fr)/(nr+a);pDry=(h-hr+a*prior)/(n-nr+a)}
+ else{pDry=(h+a*prior)/(n+a);pRain=Math.min(.99,pDry*fr)}
+ let p=(1-rainP)*pDry+rainP*pRain;if(delayOn)p=Math.min(.99,p*fd);
+ return{p,n,h,prior,fr,fd,line,m}}
+function hrOK(mm){const v=$('hr').value;if(!v)return true;const[a,b]=v.split('-').map(Number),h=Math.floor(mm/60);return h>=a&&h<=b}
+function render(){
+ if(!P)return;
+ const[ds,dty]=$('date').value.split('|'),line=$('line').value,L=+$('lv').value,th=+$('th').value,wx=$('wx').value,delayOn=$('dl').value==='1';
+ const hits=[];
+ for(const r of P.rows){if(r[1]!=dty||!hrOK(r[8]))continue;const m=P.tmeta[r[0]];if(!m||(line&&m[0]!==line))continue;
+  const pop=wx==='auto'?popAt(m[0],ds,r[8]):null,rainP=wx==='rain'?1:wx==='dry'?0:(pop??0);
+  const x=prob(r,L,rainP,delayOn);if(x.p>=th)hits.push({r,...x,rainP,pop})}
+ // 同じ列車・号車で時刻が続く区間をまとめる
+ const g={};for(const x of hits)(g[x.r[0]+'|'+x.r[3]]||(g[x.r[0]+'|'+x.r[3]]=[])).push(x);
+ const items=[];
+ for(const lst of Object.values(g)){lst.sort((a,b)=>a.r[8]-b.r[8]);let cur=null;
+  for(const x of lst){if(cur&&x.r[8]-cur.at(-1).r[8]<=12)cur.push(x);else{cur&&items.push(cur);cur=[x]}}cur&&items.push(cur)}
+ items.sort($('sort').value==='time'?(a,b)=>a[0].r[8]-b[0].r[8]:(a,b)=>Math.max(...b.map(x=>x.p))-Math.max(...a.map(x=>x.p)));
+ if(!items.length){$('out').innerHTML=`<div class="empty">この条件で${LVN[L]}になりそうな列車はありません</div>`;return}
+ $('out').innerHTML=`<h2>${LVN[L]}になりそうな列車（${items.length}件）</h2>`+items.slice(0,120).map(it=>{
+  const pk=it.reduce((a,b)=>b.p>a.p?b:a),f=it[0],l=it.at(-1),m=pk.m,S=P.S;
+  const path=f.r[2]===l.r[2]?esc(S[f.r[2]]):esc(S[f.r[2]])+' → '+esc(S[l.r[2]]);
+  const why=[`${DT[dty]}の実績 ${pk.n}日中${pk.h}日`];
+  if(pk.prior>=.3)why.push(`この時間帯は${IDX.lines[pk.line]}全体でも混みやすい（${Math.round(pk.prior*100)}%）`);
+  if(pk.rainP>0&&pk.fr>1.05)why.push(`${wx==='auto'?'降水確率'+Math.round(pk.rainP*100)+'%・':''}雨の日は約${pk.fr}倍`);
+  if(delayOn&&pk.fd>1.05)why.push(`遅延時は約${pk.fd}倍`);
+  if(pk.n<4)why.push('データ少なめ');
+  const t=f.r[8]===l.r[8]?`${hm(f.r[8])}頃`:`${hm(f.r[8])}〜${hm(l.r[8])}`;
+  return `<div class="item${pk.n<4?' low':''}" style="grid-template-columns:1fr auto"><div>
+   <div class="when">${t}　${path}</div>
+   <div class="ttl">${esc(pk.r[0])} ${esc(m[1])} ${esc(m[2])}行　${pk.r[3]}号車</div>
+   <div class="sub">${IDX.lines[m[0]]} ${DIR[m[3]]??''}・最も混む区間 ${esc(S[pk.r[2]])}</div>
+   <div>${why.map(w=>`<span class="chip">${esc(w)}</span>`).join('')}</div></div>
+   <div class="pnum">${Math.round(pk.p*100)}%<small>${LVN[L]}</small></div></div>`}).join('');
+}
+['date','wx','line','hr','lv','th','dl','sort'].forEach(id=>$(id).onchange=render);
+init();
+</script></body></html>
