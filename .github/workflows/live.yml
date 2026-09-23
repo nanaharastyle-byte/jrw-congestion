@@ -1,0 +1,24 @@
+name: live
+on:
+  schedule:
+    - cron: "0 * * * *"   # 1時間ごとに起動。前の回と交代しながら途切れず記録し続ける
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: live
+  cancel-in-progress: true  # 新しい回が始まったら古い回は終了
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 140
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python live.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LIVE_MINUTES: "130"       # 次の回が遅れても最長130分は動き続ける
+          LIVE_INTERVAL: "30"       # 取得間隔の基本（秒）。JR側の更新が遅ければ自動で合わせる
