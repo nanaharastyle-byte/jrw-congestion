@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>混雑列車 巡回ルート</title>
+<title>パトロール</title>
 <style>
 :root{--bg:#eef2f6;--paper:#fff;--ink:#1a2230;--sub:#5b6577;--rule:#d5dce6;--acc:#0072bc;
  --l1:#6fb3e8;--l2:#58a7a4;--l3:#1f9a86;--l4:#9cc54a;--l5:#c9982c;--l6:#b8407e;--l7:#3d3fa0;--rain:#2f7fd1;--wind:#1f9a86;--delay:#c23b22}
@@ -99,13 +99,20 @@ async function init(){
  HOME=P.S.indexOf('京都');
  $('meta').textContent=`過去${P.days}日分の記録（${P.from}〜）から算出`;
  $('lines').innerHTML=P.L.map(k=>`<label><input type="checkbox" value="${k}"${k==='hokurikubiwako'||k==='kyoto'?' checked':''}> ${LN[k]||k}</label>`).join('');
- $('lines').onchange=()=>{fillTurn();renderSchools()};$('dty').onchange=fillTurn;$('mode').onchange=()=>{$('turn').disabled=$('mode').value!=='manual'};
+ $('lines').onchange=()=>{fillTurn();renderSchools();renderInc()};$('dty').onchange=fillTurn;$('mode').onchange=()=>{$('turn').disabled=$('mode').value!=='manual'};
  fillTurn();renderSchools();renderInc();
 }
 // 公的統計（警察庁の全国集計）：種別・件数・場所・時間帯
 function renderInc(){
  if(!INC){$('incidents').innerHTML='';return}
- let h=`<h2>痴漢・盗撮の公的統計（張り込みの参考）</h2><p class="sub">${esc(INC.source)}／${esc(INC.scope)}</p>`;
+ let h='';
+ if(INC.cases?.length){
+  const lines=selLines(),cs=INC.cases.filter(c=>c.line==='unknown'||lines.has(c.line));
+  h+=`<h2>巡回範囲で報道された事案</h2><p class="sub">${esc(INC.cases_note||'')}</p><div class="card scroll"><table class="sch"><tr><th>発生</th><th>場所・種別</th><th>対象</th></tr>`+
+   cs.map(c=>`<tr><td>${esc(c.date)}<div class="sub">${esc(c.time)}</div>${c.year_note?`<div class="sub">${esc(c.year_note)}</div>`:''}</td><td><b>${esc(c.where)}</b><div>${esc(c.place)}／${esc(c.type)}・${c.count}件</div><div class="sub"><a href="${esc(c.url)}">${esc(c.source)}</a></div></td><td>${esc(c.victim)}</td></tr>`).join('')+
+   `</table></div>`}
+ if(INC.local){h+=`<h2>${esc(INC.local.title)}</h2><div class="card"><table class="sch">${INC.local.rows.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</table><div class="sub"><a href="${esc(INC.local.url)}">${esc(INC.local.source)}</a></div></div>`}
+ h+=`<h2>痴漢・盗撮の公的統計（全国・張り込みの参考）</h2><p class="sub">${esc(INC.source)}／${esc(INC.scope)}</p>`;
  for(const t of INC.types){
   const tot=t.times.reduce((a,x)=>a+x[1],0)||1,mx=Math.max(1,...t.times.map(x=>x[1]));
   const top=[...t.times].sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]).join('・');
