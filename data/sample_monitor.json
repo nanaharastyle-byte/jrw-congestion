@@ -5,8 +5,8 @@
     {
      "carNo": 9,
      "status": 1,
-     "congestion": 13,
-     "temp": 26,
+     "congestion": 16,
+     "temp": 25,
      "facilities": [
       3,
       5
@@ -16,7 +16,7 @@
     {
      "carNo": 8,
      "status": 1,
-     "congestion": 10,
+     "congestion": 9,
      "temp": 26,
      "facilities": [
       3,
@@ -28,7 +28,7 @@
     {
      "carNo": 7,
      "status": 1,
-     "congestion": 17,
+     "congestion": 9,
      "temp": 26,
      "facilities": [
       3,
