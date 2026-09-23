@@ -1,12 +1,12 @@
 {
- "1657H": [
+ "1663H": [
   {
    "cars": [
     {
      "carNo": 1,
      "status": 1,
-     "congestion": 23,
-     "temp": 22,
+     "congestion": 19,
+     "temp": 25,
      "facilities": [
       1,
       2,
@@ -17,8 +17,8 @@
     {
      "carNo": 2,
      "status": 1,
-     "congestion": 0,
-     "temp": 24,
+     "congestion": 16,
+     "temp": 27,
      "facilities": [],
      "types": [
       3
@@ -27,17 +27,38 @@
     {
      "carNo": 3,
      "status": 1,
-     "congestion": 0,
-     "temp": 22,
+     "congestion": 7,
+     "temp": 26,
      "facilities": [],
      "types": []
     },
     {
      "carNo": 4,
      "status": 1,
-     "congestion": 14,
-     "temp": 22,
+     "congestion": 9,
+     "temp": 26,
      "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 5,
+     "status": 1,
+     "congestion": 2,
+     "temp": 27,
+     "facilities": [],
+     "types": [
+      3
+     ]
+    },
+    {
+     "carNo": 6,
+     "status": 1,
+     "congestion": 8,
+     "temp": 25,
+     "facilities": [
+      1,
+      2
+     ],
      "types": []
     }
    ]
