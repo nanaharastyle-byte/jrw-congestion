@@ -53,7 +53,11 @@ TIMELINE_DAYS = 14       # 横並びタイムラインに出す日数
 RAIN_BINS = [0.5, 1, 3, 5, 10, 20, 30]   # 1時間雨量(mm)の区切り
 WIND_BINS = [3, 5, 8, 10, 13, 15, 20]    # 風速(m/s)の区切り
 MAX_BIN = 25
-STATS_VERSION = 2
+STATS_VERSION = 3
+
+
+def is_exp(typ):
+    return 1 if "特急" in str(typ) else 0
 
 
 def lv_of(p):
@@ -315,10 +319,10 @@ def aggregate(pid, days):
     runs = set()
     eps = defaultdict(list)
     train_days = defaultdict(set)
-    zero = lambda: [0] * 7   # 記録回数, 遅延発生回数, 最大遅延合計, 号車観測数, 多く以上, 大変多く以上, とても混雑
+    zero = lambda: [0] * 11  # 記録回数, 遅延発生回数, 最大遅延合計, 号車観測数, 多く以上, 大変多く以上, とても混雑, (うち特急)観測数, 多く, 大変多く, とても
     cst = {k: {"rain": [zero() for _ in range(len(RAIN_BINS) + 1)],
                "wind": [zero() for _ in range(len(WIND_BINS) + 1)],
-               "delay": [[0, 0, 0, 0], [0, 0, 0, 0]]} for k in L}
+               "delay": [[0] * 8, [0] * 8]} for k in L}
 
     def si(s):
         if s not in idx:
@@ -344,30 +348,32 @@ def aggregate(pid, days):
         for r in passages(raw):
             tm, mi, line, no, typ, dest, dr, secn, delay, cars = r
             runs.add(ds + tm)
-            hr, s, li = mi // 60, si(secn), L.index(line) if line in L else 0
+            hr, s, li, tg = mi // 60, si(secn), L.index(line) if line in L else 0, is_exp(typ)
             meta = tmeta.setdefault(no, {"l": line, "t": typ, "d": dest, "r": dr, "h": Counter()})
             meta["h"][hr] += 1
             c = cond.get((tm, line))
             for car, pct in cars:
                 b = min(pct // 10, MAX_BIN)
                 lv = lv_of(pct)
-                sec[(li, dr, s, car, hr, dty, b)] += 1
+                sec[(li, dr, s, car, hr, dty, tg, b)] += 1
                 trn[(no, car, dty, b)] += 1
                 if b >= 10:
                     tsec[(no, s, car, dty, b)] += 1
                 if lv >= 4:
-                    secmin[(li, dr, s, car, dty)] += [b, mi]
+                    secmin[(li, dr, s, car, dty, tg)] += [b, mi]
                 hits = [1, lv >= 5, lv >= 6, lv >= 7]
                 if line in cst:
                     dd = cst[line]["delay"][1 if delay >= 5 else 0]
                     for i in range(4):
                         dd[i] += hits[i]
+                        dd[4 + i] += hits[i] * tg
                     if c:
                         for key, v, edges in (("rain", c["rain"], RAIN_BINS), ("wind", c["wind"], WIND_BINS)):
                             if v is not None:
                                 bb = cst[line][key][bin_of(v, edges)]
                                 for i in range(4):
                                     bb[3 + i] += hits[i]
+                                    bb[7 + i] += hits[i] * tg
         # 混雑が続いた時間と区間（エピソード）
         by_train = defaultdict(list)
         for r in raw:
@@ -413,10 +419,10 @@ def aggregate(pid, days):
     return {
         "v": STATS_VERSION, "id": pid, "from": ps.isoformat(), "to": pe.isoformat(),
         "days": sorted(days), "runs": len(runs), "L": L, "S": S,
-        "sec": hist(sec),        # [路線, 方向, 区間, 号車, 時, 平日0/土休日1, [bin,回数,...]]
+        "sec": hist(sec),        # [路線, 方向, 区間, 号車, 時, 平日0/土休日1, 特急1/他0, [bin,回数,...]]
         "trn": hist(trn),        # [列車番号, 号車, 平日0/土休日1, [bin,回数,...]]
         "tsec": hist(tsec),      # [列車番号, 区間, 号車, 平日0/土休日1, [bin,回数,...]]
-        "secMin": [[*k, v] for k, v in secmin.items()],   # [路線,方向,区間,号車,平日/土休日,[bin,分,...]]
+        "secMin": [[*k, v] for k, v in secmin.items()],   # [路線,方向,区間,号車,平日/土休日,特急,[bin,分,...]]
         "pat": pats,  # [列車,号車,平日/土休日,レベル,混んだ日数,走った日数,開始分,終了分,開始区間,終了区間,最混雑区間,最大%,平均%]
         "tmeta": {k: [v["l"], v["t"], v["d"], v["r"], v["h"].most_common(1)[0][0]] for k, v in tmeta.items()},
         "cond": cst,
@@ -429,7 +435,7 @@ def timeline(dates):
     out = {"days": dates, "series": {k: {} for k in LINES}}
     for ds in dates:
         raw, cond = load_day(ds)
-        g = defaultdict(lambda: [None, None, 0, 0, 0, 0, 0, 0])   # 雨,風,最大遅延,遅延本数,号車観測,多く,大変多く,とても
+        g = defaultdict(lambda: [None, None, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])   # 雨,風,最大遅延,遅延本数,号車観測,多く,大変多く,とても,(特急分)×4
         for (tm, line), c in cond.items():
             if line not in LINES:
                 continue
@@ -441,12 +447,14 @@ def timeline(dates):
             x[3] = max(x[3], c["d5"])
         for r in passages(raw):
             x = g[(r[2], r[1] // 30)]
+            tg = is_exp(r[4])
             for _, p in r[9]:
                 lv = lv_of(p)
-                x[4] += 1
-                x[5] += lv >= 5
-                x[6] += lv >= 6
-                x[7] += lv >= 7
+                for off, w in ((4, 1), (8, tg)):
+                    x[off] += w
+                    x[off + 1] += w * (lv >= 5)
+                    x[off + 2] += w * (lv >= 6)
+                    x[off + 3] += w * (lv >= 7)
         for (line, slot), x in sorted(g.items(), key=lambda kv: kv[0][1]):
             out["series"][line].setdefault(ds, []).append([slot, *x])
     return out
