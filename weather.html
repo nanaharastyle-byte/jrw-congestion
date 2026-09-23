@@ -10,7 +10,7 @@
 html{scroll-padding-top:env(safe-area-inset-top)}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px;line-height:1.5;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
 nav{display:flex;background:var(--acc)}
-nav a{flex:1;text-align:center;color:#fff;text-decoration:none;font-size:13px;font-weight:700;padding:8px 0;opacity:.75}
+nav a{flex:1;text-align:center;color:#fff;text-decoration:none;font-size:12px;font-weight:700;padding:8px 0;opacity:.75}
 nav a[aria-current=page]{opacity:1;box-shadow:inset 0 -3px 0 #fff}
 header{background:var(--paper);border-bottom:1px solid var(--rule);padding:12px}
 h1{font-size:18px;margin:0}
@@ -48,7 +48,7 @@ svg text{font-size:10px;fill:var(--sub)}
 .legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--sub);margin-top:4px}
 .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:3px;vertical-align:-1px}
 </style></head><body>
-<nav><a href="index.html">混雑統計</a><a href="weather.html" aria-current="page">天気×遅延</a><a href="predict.html">混雑予測</a></nav>
+<nav><a href="index.html">統計</a><a href="weather.html" aria-current="page">天気×遅延</a><a href="predict.html">予測</a><a href="monitor.html">在線</a><a href="patrol.html">巡回</a></nav>
 <header>
  <h1>天気×遅延・混雑</h1><div class="meta" id="meta">読み込み中…</div>
  <div class="grid">
@@ -56,7 +56,7 @@ svg text{font-size:10px;fill:var(--sub)}
   <select id="line" aria-label="路線"></select>
   <select id="lv" aria-label="混雑レベル"><option value="6">混雑＝大変多く以上</option><option value="7">混雑＝とても混雑</option><option value="5">混雑＝多く以上</option></select>
   <select id="day" aria-label="タイムラインの日付"></select>
-  <select id="tg" aria-label="種別"><option value="">混雑＝特急を含む</option><option value="0">混雑＝特急を除く</option><option value="1">混雑＝特急のみ</option></select>
+  <select id="tg" aria-label="種別"><option value="0" selected>混雑＝特急を除く</option><option value="">混雑＝特急を含む</option><option value="1">混雑＝特急のみ</option></select>
  </div>
 </header>
 <main>
