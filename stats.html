@@ -4,43 +4,54 @@
 <title>混雑統計</title>
 <style>
 :root{--bg:#eef2f6;--paper:#fff;--ink:#1a2230;--sub:#5b6577;--rule:#d5dce6;--acc:#0072bc;
- --l1:#6fb3e8;--l2:#58a7a4;--l3:#1f9a86;--l4:#9cc54a;--l5:#c9982c;--l6:#b8407e;--l7:#3d3fa0}
+ --l1:#6fb3e8;--l2:#58a7a4;--l3:#1f9a86;--l4:#9cc54a;--l5:#c9982c;--l6:#b8407e;--l7:#3d3fa0;--rain:#2f7fd1;--wind:#1f9a86;--delay:#c23b22}
 @media (prefers-color-scheme:dark){:root{--bg:#141a22;--paper:#1d2530;--ink:#e8edf3;--sub:#9aa6b8;--rule:#2e3947}}
 *{box-sizing:border-box}
 html{scroll-padding-top:env(safe-area-inset-top)}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px;line-height:1.5;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+nav{display:flex;background:var(--acc)}
+nav a{flex:1;text-align:center;color:#fff;text-decoration:none;font-size:13px;font-weight:700;padding:8px 0;opacity:.75}
+nav a[aria-current=page]{opacity:1;box-shadow:inset 0 -3px 0 #fff}
 header{background:var(--paper);border-bottom:1px solid var(--rule);padding:12px}
 h1{font-size:18px;margin:0}
 .meta{color:var(--sub);font-size:12px;margin-top:2px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
 select{width:100%;font-size:14px;padding:6px;border-radius:6px;border:1px solid var(--rule);background:var(--bg);color:var(--ink)}
 .seg{display:flex;margin-top:10px;border:1px solid var(--acc);border-radius:8px;overflow:hidden}
-.seg button{flex:1;border:0;background:transparent;color:var(--acc);font-size:14px;font-weight:700;padding:7px 0}
+.seg button{flex:1;border:0;background:transparent;color:var(--acc);font-size:13px;font-weight:700;padding:7px 0}
 .seg button[aria-pressed=true]{background:var(--acc);color:#fff}
-button:focus-visible,select:focus-visible{outline:3px solid #f5b400;outline-offset:1px}
+button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #f5b400;outline-offset:1px}
 main{padding:10px;max-width:760px;margin:0 auto}
-h2{font-size:15px;margin:14px 0 6px}
-.dist{display:flex;height:22px;border-radius:5px;overflow:hidden;border:1px solid var(--rule)}
-.dist i{display:block;height:100%}
-.legend{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--sub);margin-top:6px}
-.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:3px;vertical-align:-1px}
+h2{font-size:15px;margin:16px 0 6px}
 .item{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:9px 10px;margin-bottom:6px;display:grid;grid-template-columns:1.8em 1fr auto;gap:8px;align-items:center}
 .rank{font-weight:700;color:var(--sub);text-align:right}
 .ttl{font-weight:700}
 .sub{color:var(--sub);font-size:12px}
+.when{font-size:13px;font-weight:700;color:var(--acc)}
 .num{text-align:right;font-weight:700;font-size:18px;white-space:nowrap}
 .num small{display:block;font-size:11px;color:var(--sub);font-weight:400}
 .bar{height:5px;border-radius:3px;background:var(--rule);margin-top:4px;overflow:hidden}
 .bar i{display:block;height:100%}
-.heatwrap{overflow-x:auto;background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:6px}
-table{border-collapse:collapse;font-size:11px}
-th{color:var(--sub);font-weight:400;padding:2px 4px;white-space:nowrap}
-td{width:34px;min-width:34px;height:26px;text-align:center;border:1px solid var(--bg)}
 .note{font-size:12px;color:var(--sub);margin:8px 0}
 .warn{background:#fff4d6;color:#6b4c00;border-radius:6px;padding:8px;font-size:13px;margin:8px 0}
 .empty{color:var(--sub);padding:24px 0;text-align:center}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:10px;margin-bottom:8px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;font-size:12px;width:100%}
+th{color:var(--sub);font-weight:400;padding:4px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--rule)}
+td{padding:4px;border-bottom:1px solid var(--rule);white-space:nowrap}
+.chip{display:inline-block;font-size:11px;border-radius:10px;padding:0 7px;margin:3px 4px 0 0;background:var(--bg);color:var(--sub)}
+
+.dist{display:flex;height:22px;border-radius:5px;overflow:hidden;border:1px solid var(--rule)}
+.dist i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--sub);margin-top:6px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:3px;vertical-align:-1px}
+.heatwrap{overflow-x:auto;background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:6px}
+.heat{width:auto;font-size:11px}.heat th{text-align:center;border:0}
+.heat td{width:34px;min-width:34px;height:26px;text-align:center;border:1px solid var(--bg);padding:0}
 .row2{display:flex;gap:6px;margin-bottom:8px}
 </style></head><body>
+<nav><a href="index.html" aria-current="page">混雑統計</a><a href="weather.html">天気×遅延</a><a href="predict.html">混雑予測</a></nav>
 <header>
  <h1>混雑統計</h1><div class="meta" id="meta">読み込み中…</div>
  <div class="grid">
@@ -52,31 +63,38 @@ td{width:34px;min-width:34px;height:26px;text-align:center;border:1px solid var(
   <select id="split" aria-label="区間の分け方"><option value="car">区間×号車</option><option value="sec">区間のみ</option></select>
  </div>
  <div class="seg" role="group" aria-label="表示">
-  <button data-v="sec" aria-pressed="true">混雑区間</button><button data-v="train" aria-pressed="false">混雑列車</button><button data-v="heat" aria-pressed="false">時間帯×号車</button>
+  <button data-v="pat" aria-pressed="true">混雑パターン</button><button data-v="sec" aria-pressed="false">混雑区間</button><button data-v="train" aria-pressed="false">混雑列車</button><button data-v="heat" aria-pressed="false">時間×号車</button>
  </div>
 </header>
 <main>
  <div id="warn"></div>
  <h2>混雑度の内訳</h2><div class="dist" id="dist"></div><div class="legend" id="legend"></div>
  <div id="out"></div>
- <p class="note">回数は「1列車が1区間を通過＝1回」で数えています（5分ごとの記録のため、短い区間は取りこぼしがあります）。割合は同じ条件での全通過回数に対する比率です。混雑レベルは乗車率(%)から暫定の基準で判定しています。</p>
+ <p class="note" id="foot"></p>
 </main>
 <script>
-// 乗車率(%)→7段階の暫定基準。公式アイコンと比べてずれていればここを直す
-const T=[40,60,80,100,130,160];
+let T=[40,60,80,100,130,160];
 const LBL=['','空席があります','ほぼ、席はうまっています','ゆったり立つことができます','吊り革につかまることができます','多くの方が乗っています','大変多くの方が乗っています','とても混雑しています'];
 const SHORT=['','空席','ほぼ満席','ゆったり立','吊り革','多い','大変多い','とても混雑'];
 const lvOf=b=>{const p=b*10;let l=1;for(const t of T)if(p>=t)l++;return l};
-const DIR={"0":"上り","1":"下り"};
+const DIR={"0":"上り","1":"下り"},DT=['平日','土休日'];
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let IDX=null,D=null,view='sec';
+const hm=m=>Math.floor(m/60)+':'+String(m%60).padStart(2,'0');
+const pct=(a,q)=>{const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.floor(q*(s.length-1)+.5))]};
+let IDX=null,D=null,view='pat';
+const FOOT={
+ pat:'混雑パターン＝同じ列車・号車が「選んだレベル以上」の状態で続いた時間と区間。開始・終了時刻は複数日の中央値です。',
+ sec:'回数＝1列車が1区間を通過するごとに1回。時間は混雑した時刻の中心80%の範囲です。',
+ train:'回数＝その列車・号車が区間を通過するごとに1回。',
+ heat:'数字＝その時間帯・号車で選んだレベル以上だった割合(%)。「·」は記録3件未満。'};
 
 function plabel(id){const[y,n]=id.slice(1).split('-').map(Number);if(id[0]==='M')return `月間 ${y}年${n}月`;
  const j=new Date(Date.UTC(y,0,4)),mon=new Date(j-((j.getUTCDay()+6)%7)*864e5+(n-1)*7*864e5),sun=new Date(+mon+6*864e5);
  const f=d=>`${d.getUTCMonth()+1}/${d.getUTCDate()}`;return `週間 ${f(mon)}〜${f(sun)}`}
 async function init(){
  try{IDX=await (await fetch('stats/index.json',{cache:'no-store'})).json()}catch(e){$('meta').textContent='統計データがまだありません';return}
+ if(IDX.T)T=IDX.T;
  const st=IDX.status||{};
  $('meta').textContent=`更新 ${IDX.built}／最終記録 ${st.last||'-'}（混雑データあり ${st.trainsWithData??'-'}本）`;
  if(st.errors&&st.errors.length)$('warn').innerHTML=`<div class="warn">直近の取得エラー: ${esc(st.errors.join(' / '))}</div>`;
@@ -89,32 +107,46 @@ async function init(){
 async function loadPeriod(){
  $('out').innerHTML='<div class="empty">読み込み中…</div>';
  D=await (await fetch('stats/'+$('period').value+'.json',{cache:'no-store'})).json();
-  render();
+ D.secMin=D.secMin||[];D.pat=D.pat||[];
+ D.minIdx={};for(const[li,d,s,car,dt,a]of D.secMin)(D.minIdx[[li,d,s,dt].join('|')]||(D.minIdx[[li,d,s,dt].join('|')]=[])).push([car,a]);
+ render();
 }
 function hrOK(h){const v=$('hr').value;if(!v)return true;const[a,b]=v.split('-').map(Number);return h>=a&&h<=b}
 function secRows(){const line=$('line').value,dt=$('dt').value;
  return D.sec.filter(r=>(!line||D.L[r[0]]===line)&&(dt===''||r[5]==dt)&&hrOK(r[4]))}
-// 行のヒストグラム[bin,回数,...]を集計: 全体・指定レベル以上・レベル別
 function tally(h,min,c){let all=0,hit=0;for(let i=0;i<h.length;i+=2){const l=lvOf(h[i]),v=h[i+1];all+=v;if(l>=min)hit+=v;if(c)c[l]+=v}return[all,hit]}
-
 function renderDist(rows){
  const c=Array(8).fill(0);let n=0;for(const r of rows)n+=tally(r[6],8,c)[0];
  $('dist').innerHTML=n?c.map((v,l)=>l&&v?`<i style="width:${v/n*100}%;background:var(--l${l})" title="${LBL[l]}"></i>`:'').join(''):'';
  $('legend').innerHTML=c.map((v,l)=>l?`<span><span class="sw" style="background:var(--l${l})"></span>${SHORT[l]} ${n?Math.round(v/n*100):0}%</span>`:'').join('')+`<span>計 ${n}件</span>`;
 }
-function item(i,title,sub,hit,all,max,l){
- return `<div class="item"><div class="rank">${i+1}</div><div><div class="ttl">${title}</div><div class="sub">${sub}</div>
+function item(i,title,when,sub,hit,all,max,l,unit='回'){
+ return `<div class="item"><div class="rank">${i+1}</div><div><div class="ttl">${title}</div>${when?`<div class="when">${when}</div>`:''}<div class="sub">${sub}</div>
  <div class="bar"><i style="width:${hit/max*100}%;background:var(--l${l})"></i></div></div>
- <div class="num">${hit}回<small>${Math.round(hit/all*100)}%</small></div></div>`}
+ <div class="num">${hit}${unit}<small>${Math.round(hit/all*100)}%</small></div></div>`}
+function secPath(a,b){a=D.S[a];b=D.S[b];return a===b?esc(a):esc(a)+' → '+esc(b)}
 
+function renderPat(min){
+ const line=$('line').value,dt=$('dt').value;
+ const list=D.pat.filter(p=>{const m=D.tmeta[p[0]];return p[3]===Math.min(7,Math.max(4,min))&&m&&(!line||m[0]===line)&&(dt===''||p[2]==dt)&&hrOK(Math.floor(p[6]/60))})
+  .sort((a,b)=>b[4]-a[4]||b[4]/b[5]-a[4]/a[5]||b[11]-a[11]).slice(0,80);
+ if(!list.length)return '<div class="empty">条件に合う混雑パターンはまだありません</div>';
+ return '<h2>混雑パターン（いつ・どこで・何号車）</h2>'+list.map((p,i)=>{const[no,car,dty,L,dh,dtot,s,e,ss,es,ps,mx,avg]=p,m=D.tmeta[no];
+  return item(i,`${esc(no)} ${esc(m[1])} ${esc(m[2])}行　${car}号車`,
+   `${hm(s)}〜${hm(e)}　${secPath(ss,es)}`,
+   `${IDX.lines[m[0]]} ${DIR[m[3]]??''}・${DT[dty]}　最も混む区間 ${esc(D.S[ps])}（最大${mx}%／平均${avg}%）`,dh,dtot,list[0][4],Math.max(L,6),'日')}).join('');
+}
 function renderSec(rows,min){
- const byCar=$('split').value==='car',g={};
- for(const[li,d,s,car,h,dt,hs]of rows){const l=D.L[li],k=[l,d,s,byCar?car:''].join('|');
-  const o=g[k]||(g[k]={l,d,s,car,hit:0,all:0,hrs:{}});const[a,x]=tally(hs,min);o.all+=a;if(x){o.hit+=x;o.hrs[h]=(o.hrs[h]||0)+x}}
+ const byCar=$('split').value==='car',dt=$('dt').value,g={};
+ for(const[li,d,s,car,h,dty,hs]of rows){const k=[li,d,s,byCar?car:''].join('|');
+  const o=g[k]||(g[k]={li,d,s,car,hit:0,all:0});const[a,x]=tally(hs,min);o.all+=a;o.hit+=x}
  const list=Object.values(g).filter(o=>o.hit).sort((a,b)=>b.hit-a.hit||b.hit/b.all-a.hit/a.all).slice(0,60);
  if(!list.length)return '<div class="empty">条件に合う混雑の記録はありません</div>';
- return '<h2>混雑区間ランキング</h2>'+list.map((o,i)=>{const pk=Object.entries(o.hrs).sort((a,b)=>b[1]-a[1])[0][0];
-  return item(i,esc(D.S[o.s])+(byCar?`　${o.car}号車`:''),`${IDX.lines[o.l]} ${DIR[o.d]??''}　ピーク ${pk}時台`,o.hit,o.all,list[0].hit,Math.max(min,6))}).join('');
+ return '<h2>混雑区間ランキング</h2>'+list.map((o,i)=>{
+  const mins=[];for(const dty of dt===''?[0,1]:[+dt])for(const[car,a]of D.minIdx[[o.li,o.d,o.s,dty].join('|')]||[]){
+   if(byCar&&car!==o.car)continue;for(let j=0;j<a.length;j+=2)if(lvOf(a[j])>=min&&hrOK(Math.floor(a[j+1]/60)))mins.push(a[j+1])}
+  const when=mins.length?`よく混む時間 ${hm(pct(mins,.1))}〜${hm(pct(mins,.9))}`:'';
+  return item(i,esc(D.S[o.s])+(byCar?`　${o.car}号車`:''),when,`${IDX.lines[D.L[o.li]]} ${DIR[o.d]??''}`,o.hit,o.all,list[0].hit,Math.max(min,6))}).join('');
 }
 function renderTrain(min){
  const line=$('line').value,dt=$('dt').value,g={};
@@ -123,38 +155,35 @@ function renderTrain(min){
   const k=no+'|'+car;const o=g[k]||(g[k]={no,car,hit:0,all:0});const[a,x]=tally(hs,min);o.all+=a;o.hit+=x}
  const list=Object.values(g).filter(o=>o.hit).sort((a,b)=>b.hit-a.hit||b.hit/b.all-a.hit/a.all).slice(0,60);
  if(!list.length)return '<div class="empty">条件に合う混雑の記録はありません</div>';
- const ts={};for(const[no,s,car,d,hs]of D.tsec){if(dt!==''&&d!=dt)continue;const x=tally(hs,min)[1];if(!x)continue;
-  const k=no+'|'+car;(ts[k]||(ts[k]={}))[s]=(ts[k][s]||0)+x}
- return '<h2>混雑列車ランキング（列車×号車）</h2>'+list.map((o,i)=>{const m=D.tmeta[o.no];
-  const top=Object.entries(ts[o.no+'|'+o.car]||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([s])=>esc(D.S[s])).join('、');
-  return item(i,`${esc(o.no)} ${esc(m[1])} ${esc(m[2])}行　${o.car}号車`,
-   `${IDX.lines[m[0]]} ${DIR[m[3]]??''} ${m[4]}時台${top?'<br>混雑区間: '+top:''}`,o.hit,o.all,list[0].hit,Math.max(min,6))}).join('');
+ const L=Math.min(7,Math.max(4,min)),pb={};
+ for(const p of D.pat){if(p[3]!==L||(dt!==''&&p[2]!=dt))continue;const k=p[0]+'|'+p[1];if(!pb[k]||p[4]>pb[k][4])pb[k]=p}
+ return '<h2>混雑列車ランキング（列車×号車）</h2>'+list.map((o,i)=>{const m=D.tmeta[o.no],p=pb[o.no+'|'+o.car];
+  return item(i,`${esc(o.no)} ${esc(m[1])} ${esc(m[2])}行　${o.car}号車`,p?`${hm(p[6])}〜${hm(p[7])}　${secPath(p[8],p[9])}`:'',
+   `${IDX.lines[m[0]]} ${DIR[m[3]]??''}`,o.hit,o.all,list[0].hit,Math.max(min,6))}).join('');
 }
 function renderHeat(rows,min){
  const lines=[...new Set(rows.map(r=>D.L[r[0]]))];
  if(!lines.length)return '<div class="empty">データがありません</div>';
  const hl=$('hline')?.value&&lines.includes($('hline').value)?$('hline').value:lines[0];
- const hd=$('hdir')?.value??'1';
- const c={};let maxCar=0;const hours=new Set();
+ const hd=$('hdir')?.value??'1',c={};let maxCar=0;const hours=new Set();
  for(const[li,d,s,car,h,dt,hs]of rows){if(D.L[li]!==hl||String(d)!==hd)continue;
   const k=h+'|'+car;const o=c[k]||(c[k]={hit:0,all:0});const[a,x]=tally(hs,min);o.all+=a;o.hit+=x;maxCar=Math.max(maxCar,car);hours.add(h)}
  const hs=[...hours].sort((a,b)=>a-b);
  let t='<div class="row2"><select id="hline">'+lines.map(l=>`<option value="${l}"${l===hl?' selected':''}>${IDX.lines[l]}</option>`).join('')+
   `</select><select id="hdir"><option value="1"${hd==='1'?' selected':''}>下り</option><option value="0"${hd==='0'?' selected':''}>上り</option></select></div>`;
  if(!hs.length)return t+'<div class="empty">この路線・方向のデータがありません</div>';
- t+='<h2>時間帯×号車の混雑割合</h2><div class="heatwrap"><table><tr><th></th>';
+ t+='<h2>時間帯×号車の混雑割合</h2><div class="heatwrap"><table class="heat"><tr><th></th>';
  for(let n=1;n<=maxCar;n++)t+=`<th>${n}号車</th>`;t+='</tr>';
  for(const h of hs){t+=`<tr><th>${h}時</th>`;for(let n=1;n<=maxCar;n++){const o=c[h+'|'+n];
   if(!o||o.all<3){t+='<td style="color:var(--sub)">·</td>';continue}
-  const r=o.hit/o.all;t+=`<td style="background:rgba(61,63,160,${Math.min(1,r*1.4).toFixed(2)});color:${r>.4?'#fff':'var(--ink)'}" title="${o.hit}/${o.all}">${Math.round(r*100)}</td>`}t+='</tr>'}
- return t+'</table></div><p class="note">数字＝その時間帯・号車で選んだレベル以上だった割合(%)。「·」は記録3件未満。</p>';
+  const r=o.hit/o.all;t+=`<td style="background:rgba(61,63,160,${Math.min(1,r*1.4).toFixed(2)});color:${r>.4?'#fff':'var(--ink)'}">${Math.round(r*100)}</td>`}t+='</tr>'}
+ return t+'</table></div>';
 }
 function render(){
  if(!D)return;const rows=secRows(),min=+$('lv').value;
- renderDist(rows);
- $('split').disabled=view!=='sec';
- $('out').innerHTML=view==='sec'?renderSec(rows,min):view==='train'?renderTrain(min):renderHeat(rows,min);
- if(view==='heat'){$('hline')&&($('hline').onchange=render);$('hdir')&&($('hdir').onchange=render)}
+ renderDist(rows);$('split').disabled=view!=='sec';$('foot').textContent=FOOT[view];
+ $('out').innerHTML=view==='pat'?renderPat(min):view==='sec'?renderSec(rows,min):view==='train'?renderTrain(min):renderHeat(rows,min);
+ if(view==='heat'&&$('hline')){$('hline').onchange=render;$('hdir').onchange=render}
 }
 document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{view=b.dataset.v;
  document.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed',x===b));render()});
