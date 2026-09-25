@@ -49,8 +49,8 @@
     {
      "carNo": 7,
      "status": 1,
-     "congestion": 1,
-     "temp": 24,
+     "congestion": 0,
+     "temp": 25,
      "facilities": [],
      "types": [
       3
@@ -75,7 +75,7 @@
     {
      "carNo": 4,
      "status": 1,
-     "congestion": 1,
+     "congestion": 0,
      "temp": 23,
      "facilities": [],
      "types": []
@@ -92,7 +92,7 @@
      "carNo": 2,
      "status": 1,
      "congestion": 0,
-     "temp": 25,
+     "temp": 23,
      "facilities": [],
      "types": [
       3
@@ -102,7 +102,7 @@
      "carNo": 1,
      "status": 1,
      "congestion": 2,
-     "temp": 23,
+     "temp": 22,
      "facilities": [
       1,
       2,
