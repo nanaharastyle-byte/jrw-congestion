@@ -10,7 +10,7 @@
 html{scroll-padding-top:env(safe-area-inset-top)}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px;line-height:1.5;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
 nav{display:flex;background:var(--acc)}
-nav a{flex:1;text-align:center;color:#fff;text-decoration:none;font-size:12px;font-weight:700;padding:8px 0;opacity:.75}
+nav a{flex:1;text-align:center;color:#fff;text-decoration:none;font-size:11px;font-weight:700;padding:8px 0;opacity:.75}
 nav a[aria-current=page]{opacity:1;box-shadow:inset 0 -3px 0 #fff}
 header{background:var(--paper);border-bottom:1px solid var(--rule);padding:12px}
 h1{font-size:18px;margin:0}
@@ -48,7 +48,7 @@ svg text{font-size:10px;fill:var(--sub)}
 .legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--sub);margin-top:4px}
 .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:3px;vertical-align:-1px}
 </style></head><body>
-<nav><a href="index.html">統計</a><a href="weather.html" aria-current="page">天気×遅延</a><a href="predict.html">予測</a><a href="monitor.html">在線</a><a href="patrol.html">巡回</a></nav>
+<nav><a href="index.html">統計</a><a href="weather.html" aria-current="page">天気</a><a href="predict.html">予測</a><a href="monitor.html">在線</a><a href="timetable.html">時刻表</a><a href="patrol.html">巡回</a></nav>
 <header>
  <h1>天気×遅延・混雑</h1><div class="meta" id="meta">読み込み中…</div>
  <div class="grid">
@@ -96,9 +96,10 @@ function table(kind,edges,unit,title){
  const lab=labels(edges,unit);
  const dRate=b=>b[0]>=6?b[1]/b[0]:null,cRate=b=>{const o=pick(b,3,7,0);return o>=20?pick(b,3,7,L-4)/o:null};
  let t=`<h2>${title}</h2><div class="card">`+finding(bins,edges,unit,'遅延発生率',dRate)+finding(bins,edges,unit,'混雑率',cRate)+
-  `<div class="scroll"><table><tr><th>${kind==='rain'?'1時間雨量(mm)':'風速(m/s)'}</th><th>記録</th><th>遅延発生率</th><th>平均最大遅延</th><th>混雑率</th></tr>`;
+  (()=>{const ci=kind==='rain'?12:13,cr=b=>b[0]>=6?(b[ci]||0)/b[0]:null;return finding(bins,edges,unit,`${kind==='rain'?'雨':'風'}が原因と発表された遅延`,cr)})()+
+  `<div class="scroll"><table><tr><th>${kind==='rain'?'1時間雨量(mm)':'風速(m/s)'}</th><th>記録</th><th>遅延発生率</th><th>${kind==='rain'?'雨':'風'}が原因<br>（JR発表）</th><th>平均最大遅延</th><th>混雑率</th></tr>`;
  bins.forEach((b,i)=>{if(!b[0]&&!pick(b,3,7,0))return;
-  t+=`<tr><td>${lab[i]}</td><td>${b[0]}回</td>${barCell(dRate(b),'var(--delay)')}<td>${b[0]?(b[2]/b[0]).toFixed(1)+'分':'-'}</td>${barCell(cRate(b),'var(--l6)')}</tr>`});
+  t+=`<tr><td>${lab[i]}</td><td>${b[0]}回</td>${barCell(dRate(b),'var(--delay)')}${barCell(b[0]>=6?(b[kind==='rain'?12:13]||0)/b[0]:null,'var(--rain)')}<td>${b[0]?(b[2]/b[0]).toFixed(1)+'分':'-'}</td>${barCell(cRate(b),'var(--l6)')}</tr>`});
  return t+'</table></div></div>';
 }
 function delayTable(){
@@ -134,9 +135,19 @@ function timelineHtml(){
   <div class="legend"><span><span class="sw" style="background:var(--rain)"></span>1時間雨量</span><span><span class="sw" style="background:var(--wind)"></span>風速</span><span><span class="sw" style="background:var(--delay)"></span>最大遅延</span><span><span class="sw" style="background:var(--l6)"></span>混雑率</span></div>
   ${wet?`<details><summary class="sub">雨1mm以上・遅延5分以上の時間帯の数値</summary><div class="scroll"><table><tr><th>時刻</th><th>雨mm/h</th><th>風m/s</th><th>最大遅延</th><th>混雑率</th></tr>${wet}</table></div></details>`:''}</div>`;
 }
+// 路線ごとに「雨が原因の遅延」が出始める雨量をまとめる
+function lineSummary(){
+ const E=D.rainBins||[0.5,1,3,5,10,20,30],lab=labels(E,'mm');let rows='';
+ for(const[k,name]of Object.entries(IDX.lines)){const bins=D.cond?.[k]?.rain;if(!bins)continue;
+  const r=bins.map(b=>b[0]>=6?[(b[12]||0)/b[0],b[1]/b[0]]:null);
+  const i=r.findIndex((x,j)=>j>0&&x&&x[0]>=.2),dry=r[0];
+  const any=bins.reduce((a,b)=>a+(b[12]||0),0);
+  rows+=`<tr><td>${esc(name)}</td><td>${i>0?`<b>${E[i-1]}mm以上</b>`:any?'はっきりせず':'記録なし'}</td><td>${i>0?Math.round(r[i][0]*100)+'%':'-'}</td><td>${dry?Math.round(dry[1]*100)+'%':'-'}</td></tr>`}
+ return `<h2>路線別：雨で遅れ始める雨量</h2><div class="card"><div class="scroll"><table><tr><th>路線</th><th>雨が原因の遅延が<br>2割を超える雨量</th><th>その雨量での<br>発生率</th><th>雨なしの<br>遅延発生率</th></tr>${rows}</table></div>
+  <p class="sub">「雨が原因」はJR西日本の運行情報で原因に「雨」を含む遅延です。雨量は路線沿いのアメダスの1時間雨量の最大値。記録がたまるほど正確になります。</p></div>`}
 function render(){
  if(!D)return;
- $('out').innerHTML=timelineHtml()+table('rain',D.rainBins||[0.5,1,3,5,10,20,30],'mm','雨量と遅延・混雑')+table('wind',D.windBins||[3,5,8,10,13,15,20],'m/s','風速と遅延・混雑')+delayTable();
+ $('out').innerHTML=lineSummary()+timelineHtml()+table('rain',D.rainBins||[0.5,1,3,5,10,20,30],'mm','雨量と遅延・混雑')+table('wind',D.windBins||[3,5,8,10,13,15,20],'m/s','風速と遅延・混雑')+delayTable();
 }
 ['line','lv','day','tg'].forEach(id=>$(id).onchange=render);$('period').onchange=loadPeriod;
 init();
