@@ -802,21 +802,32 @@ def timetable(dates, pats):
     return out
 
 
-def trainlogs(dates):
-    """列車ごとの最新の走行記録（号車別の乗車率の推移）"""
+def trainlogs(dates, keep=14):
+    """列車ごと・日ごとの走行記録。同じ区間の記録は1行にまとめ、号車ごとの最大乗車率と最大の遅れを残す"""
     logs = {}
-    for ds in reversed(dates[-3:]):
+    for ds in reversed(dates[-keep:]):
         raw, _ = load_day(ds)
         by = defaultdict(list)
         for r in raw:
-            if r[9]:
-                by[r[3]].append(r)
+            by[r[3]].append(r)
         for no, obs in by.items():
-            if no in logs:
-                continue
+            if not any(r[9] for r in obs):
+                continue                                  # 混雑データのない列車は対象外
             obs.sort(key=lambda r: r[0])
-            logs[no] = {"date": ds, "typ": obs[0][4], "dest": obs[0][5],
-                        "rows": [[r[0], r[7], [[c, p] for c, p in r[9]]] for r in obs]}
+            rows = []
+            for r in obs:
+                sec = norm(r[7])
+                if rows and rows[-1][1] == sec:
+                    row = rows[-1]
+                else:
+                    row = [r[0][:5], sec, 0, {}]
+                    rows.append(row)
+                row[2] = max(row[2], r[8])
+                for c, p in r[9]:
+                    row[3][c] = max(row[3].get(c, -1), p)
+            lg = logs.setdefault(no, {"typ": obs[0][4], "dest": obs[0][5], "days": {}})
+            lg["days"][ds] = {"typ": obs[0][4], "dest": obs[0][5],
+                              "rows": [[t, sec, dl, sorted(cs.items())] for t, sec, dl, cs in rows]}
     return logs
 
 
