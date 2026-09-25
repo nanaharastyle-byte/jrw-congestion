@@ -1,39 +1,36 @@
 {
- "1001M": [
+ "101C": [
   {
    "cars": [
     {
-     "carNo": 9,
+     "carNo": 1,
      "status": 1,
-     "congestion": 7,
-     "temp": 25,
+     "congestion": 50,
+     "temp": 23,
      "facilities": [
-      3,
-      5
+      1,
+      2
      ],
      "types": []
     },
     {
-     "carNo": 8,
+     "carNo": 2,
      "status": 1,
-     "congestion": 2,
-     "temp": 24,
-     "facilities": [
-      3,
-      4,
-      5
-     ],
-     "types": []
+     "congestion": 50,
+     "temp": 21,
+     "facilities": [],
+     "types": [
+      3
+     ]
     },
     {
-     "carNo": 7,
+     "carNo": 3,
      "status": 1,
-     "congestion": 10,
-     "temp": 25,
+     "congestion": 40,
+     "temp": 23,
      "facilities": [
-      3,
-      4,
-      5
+      1,
+      2
      ],
      "types": []
     }
@@ -42,51 +39,45 @@
   {
    "cars": [
     {
-     "carNo": 6,
+     "carNo": 4,
      "status": 1,
-     "congestion": -1,
-     "temp": -1,
-     "facilities": [],
+     "congestion": 35,
+     "temp": 25,
+     "facilities": [
+      1,
+      2
+     ],
      "types": []
     },
     {
      "carNo": 5,
      "status": 1,
-     "congestion": -1,
-     "temp": -1,
+     "congestion": 6,
+     "temp": 27,
      "facilities": [],
-     "types": []
+     "types": [
+      4
+     ]
     },
     {
-     "carNo": 4,
+     "carNo": 6,
      "status": 1,
-     "congestion": -1,
-     "temp": -1,
+     "congestion": 19,
+     "temp": 23,
      "facilities": [],
-     "types": []
+     "types": [
+      3
+     ]
     },
     {
-     "carNo": 3,
+     "carNo": 7,
      "status": 1,
-     "congestion": -1,
-     "temp": -1,
-     "facilities": [],
-     "types": []
-    },
-    {
-     "carNo": 2,
-     "status": 1,
-     "congestion": -1,
-     "temp": -1,
-     "facilities": [],
-     "types": []
-    },
-    {
-     "carNo": 1,
-     "status": 1,
-     "congestion": -1,
-     "temp": -1,
-     "facilities": [],
+     "congestion": 32,
+     "temp": 22,
+     "facilities": [
+      1,
+      2
+     ],
      "types": []
     }
    ]
