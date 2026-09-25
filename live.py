@@ -218,7 +218,7 @@ def main():
                         total += 1
                         if r[8]:
                             recent.setdefault(r[2], {"typ": r[3], "dest": r[4], "rows": []})["rows"].append(
-                                [start, r[0], r[6], r[8]])
+                                [start, r[0], r[6], r[8], r[7]])
                 if data["lines"]:
                     with open(f"{WORK}/latest.json", "w", encoding="utf-8") as f:
                         json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
