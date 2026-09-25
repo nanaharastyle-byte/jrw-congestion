@@ -5,8 +5,8 @@
     {
      "carNo": 1,
      "status": 1,
-     "congestion": 43,
-     "temp": 22,
+     "congestion": 50,
+     "temp": 23,
      "facilities": [
       1,
       2
@@ -16,8 +16,8 @@
     {
      "carNo": 2,
      "status": 1,
-     "congestion": 46,
-     "temp": 21,
+     "congestion": 49,
+     "temp": 22,
      "facilities": [],
      "types": [
       3
@@ -26,8 +26,8 @@
     {
      "carNo": 3,
      "status": 1,
-     "congestion": 40,
-     "temp": 21,
+     "congestion": 45,
+     "temp": 22,
      "facilities": [
       1,
       2
@@ -52,7 +52,7 @@
     {
      "carNo": 5,
      "status": 1,
-     "congestion": 15,
+     "congestion": 26,
      "temp": 25,
      "facilities": [],
      "types": [
@@ -62,8 +62,8 @@
     {
      "carNo": 6,
      "status": 1,
-     "congestion": 25,
-     "temp": 22,
+     "congestion": 45,
+     "temp": 21,
      "facilities": [],
      "types": [
       3
@@ -72,7 +72,7 @@
     {
      "carNo": 7,
      "status": 1,
-     "congestion": 49,
+     "congestion": 64,
      "temp": 22,
      "facilities": [
       1,
