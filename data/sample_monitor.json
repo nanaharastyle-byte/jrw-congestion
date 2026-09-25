@@ -1,5 +1,5 @@
 {
- "1004M": [
+ "1006M": [
   {
    "cars": [
     {
@@ -57,7 +57,7 @@
     {
      "carNo": 7,
      "status": 1,
-     "congestion": 35,
+     "congestion": 51,
      "temp": 24,
      "facilities": [
       3,
@@ -69,7 +69,7 @@
     {
      "carNo": 8,
      "status": 1,
-     "congestion": 74,
+     "congestion": 9,
      "temp": 24,
      "facilities": [
       3,
@@ -81,9 +81,10 @@
     {
      "carNo": 9,
      "status": 1,
-     "congestion": 19,
-     "temp": 25,
+     "congestion": 18,
+     "temp": 24,
      "facilities": [
+      1,
       3,
       5
      ],
