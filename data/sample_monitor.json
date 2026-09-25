@@ -1,36 +1,39 @@
 {
- "101C": [
+ "1001M": [
   {
    "cars": [
     {
-     "carNo": 1,
+     "carNo": 9,
      "status": 1,
-     "congestion": 50,
-     "temp": 23,
+     "congestion": 21,
+     "temp": 24,
      "facilities": [
-      1,
-      2
+      3,
+      5
      ],
      "types": []
     },
     {
-     "carNo": 2,
+     "carNo": 8,
      "status": 1,
-     "congestion": 50,
-     "temp": 21,
-     "facilities": [],
-     "types": [
-      3
-     ]
+     "congestion": 29,
+     "temp": 24,
+     "facilities": [
+      3,
+      4,
+      5
+     ],
+     "types": []
     },
     {
-     "carNo": 3,
+     "carNo": 7,
      "status": 1,
-     "congestion": 40,
-     "temp": 23,
+     "congestion": 9,
+     "temp": 25,
      "facilities": [
-      1,
-      2
+      3,
+      4,
+      5
      ],
      "types": []
     }
@@ -39,45 +42,51 @@
   {
    "cars": [
     {
-     "carNo": 4,
+     "carNo": 6,
      "status": 1,
-     "congestion": 35,
-     "temp": 25,
-     "facilities": [
-      1,
-      2
-     ],
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
      "types": []
     },
     {
      "carNo": 5,
      "status": 1,
-     "congestion": 6,
-     "temp": 27,
+     "congestion": -1,
+     "temp": -1,
      "facilities": [],
-     "types": [
-      4
-     ]
+     "types": []
     },
     {
-     "carNo": 6,
+     "carNo": 4,
      "status": 1,
-     "congestion": 19,
-     "temp": 23,
+     "congestion": -1,
+     "temp": -1,
      "facilities": [],
-     "types": [
-      3
-     ]
+     "types": []
     },
     {
-     "carNo": 7,
+     "carNo": 3,
      "status": 1,
-     "congestion": 32,
-     "temp": 22,
-     "facilities": [
-      1,
-      2
-     ],
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 2,
+     "status": 1,
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 1,
+     "status": 1,
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
      "types": []
     }
    ]
