@@ -48,6 +48,54 @@ WX_POINTS = {
 FORECAST_AREAS = {"hokurikubiwako": ("250000", "250010"), "kyoto": ("260000", "260010"),
                   "nara": ("260000", "260010"), "sagano": ("260000", "260010")}
 
+# 路線ごとの駅（駅ナンバリング, 駅名）。統計・在線・時刻表の路線の振り分けに使う
+LINE_STATIONS = {
+    "kyoto": [("JR-A31", "京都"), ("JR-A32", "西大路"), ("JR-A33", "桂川"), ("JR-A34", "向日町"), ("JR-A35", "長岡京"),
+              ("JR-A36", "山崎"), ("JR-A37", "島本"), ("JR-A38", "高槻"), ("JR-A39", "摂津富田"), ("JR-A40", "JR総持寺"),
+              ("JR-A41", "茨木"), ("JR-A42", "千里丘"), ("JR-A43", "岸辺"), ("JR-A44", "吹田"), ("JR-A45", "東淀川"),
+              ("JR-A46", "新大阪"), ("JR-A47", "大阪")],
+    "hokurikubiwako": [("JR-A09", "長浜"), ("JR-A10", "田村"), ("JR-A11", "坂田"), ("JR-A12", "米原"), ("JR-A13", "彦根"),
+                       ("JR-A14", "南彦根"), ("JR-A15", "河瀬"), ("JR-A16", "稲枝"), ("JR-A17", "能登川"), ("JR-A18", "安土"),
+                       ("JR-A19", "近江八幡"), ("JR-A20", "篠原"), ("JR-A21", "野洲"), ("JR-A22", "守山"), ("JR-A23", "栗東"),
+                       ("JR-A24", "草津"), ("JR-A25", "南草津"), ("JR-A26", "瀬田"), ("JR-A27", "石山"), ("JR-A28", "膳所"),
+                       ("JR-A29", "大津"), ("JR-A30", "山科"), ("JR-A31", "京都")],
+    "sagano": [("JR-E01", "京都"), ("JR-E02", "梅小路京都西"), ("JR-E03", "丹波口"), ("JR-E04", "二条"), ("JR-E05", "円町"),
+               ("JR-E06", "花園"), ("JR-E07", "太秦"), ("JR-E08", "嵯峨嵐山"), ("JR-E09", "保津峡"), ("JR-E10", "馬堀"),
+               ("JR-E11", "亀岡"), ("JR-E12", "並河"), ("JR-E13", "千代川"), ("JR-E14", "八木"), ("JR-E15", "吉富"),
+               ("JR-E16", "園部")],
+    "nara": [("JR-D01", "京都"), ("JR-D02", "東福寺"), ("JR-D03", "稲荷"), ("JR-D04", "JR藤森"), ("JR-D05", "桃山"),
+             ("JR-D06", "六地蔵"), ("JR-D07", "木幡"), ("JR-D08", "黄檗"), ("JR-D09", "宇治"), ("JR-D10", "JR小倉"),
+             ("JR-D11", "新田"), ("JR-D12", "城陽"), ("JR-D13", "長池"), ("JR-D14", "山城青谷"), ("JR-D15", "山城多賀"),
+             ("JR-D16", "玉水"), ("JR-D17", "棚倉"), ("JR-D18", "上狛"), ("JR-D19", "木津"), ("JR-D21", "平城山"),
+             ("JR-D22", "奈良")],
+}
+_LSET = {k: {n for _, n in v} for k, v in LINE_STATIONS.items()}
+# 運行情報（遅延の原因）の路線キー候補
+TRAFFIC_KEYS = {"hokurikubiwako": ["biwako", "hokurikubiwako", "hokuriku"], "kyoto": ["kyoto"],
+                "nara": ["nara"], "sagano": ["sagano", "sanin1", "sanin"]}
+DAILY_KEEP = 35          # 日別の統計を残す日数
+
+
+def norm(name):
+    return str(name).replace("ＪＲ", "JR").strip()
+
+
+def sec_names(sec):
+    sec = norm(sec)
+    return [sec[:-1]] if sec.endswith("駅") else sec.split("〜")
+
+
+def line_fix(line, sec):
+    """区間の駅がすべて含まれる路線に振り分け直す（琵琶湖線のデータに京都線の区間が混じるのを防ぐ）"""
+    names = sec_names(sec)
+    if line in _LSET and all(n in _LSET[line] for n in names):
+        return line
+    for k, st in _LSET.items():
+        if all(n in st for n in names):
+            return k
+    return line
+
+
 RAW, COND, STATS, SITE = "data/raw", "data/cond", "data/stats", "_site"
 DB_RAW = os.environ.get("DB_RAW", "/tmp/db/raw")   # live.py が30秒ごとに記録したデータ（liveブランチから取り出す）
 RAW_KEEP_DAYS = 75       # 生データの保存日数
@@ -56,7 +104,7 @@ TIMELINE_DAYS = 14       # 横並びタイムラインに出す日数
 RAIN_BINS = [0.5, 1, 3, 5, 10, 20, 30]   # 1時間雨量(mm)の区切り
 WIND_BINS = [3, 5, 8, 10, 13, 15, 20]    # 風速(m/s)の区切り
 MAX_BIN = 25
-STATS_VERSION = 4
+STATS_VERSION = 5
 
 
 def is_exp(typ):
@@ -200,6 +248,11 @@ def collect(now):
     hhmm = now.strftime("%H:%M")
     monitor = fetch(WEST + "trainmonitorinfo.json").get("trains", {})
     wx_time, wx = fetch_weather()
+    try:
+        traffic = fetch(WEST + "area_kinki_trafficinfo.json").get("lines", {}) or {}
+    except Exception as e:
+        traffic = {}
+        print("運行情報の取得に失敗:", e)
     rows, conds, seen, errors = [], [], set(), []
     latest = {"t": now.strftime("%Y-%m-%d %H:%M"), "lines": {}, "monitor": {}, "errors": errors}
     for line in LINES:
@@ -228,7 +281,9 @@ def collect(now):
             return max(v) if v else ""
         conds.append([hhmm, line, len(trains), sum(d >= 1 for d in delays), sum(d >= 5 for d in delays),
                       sum(d >= 10 for d in delays), max(delays, default=0), sum(delays),
-                      mx(1), mx(2), mx(3), mx(4), wx_time, "/".join(x[0] for x in w)])
+                      mx(1), mx(2), mx(3), mx(4), wx_time, "/".join(x[0] for x in w),
+                      *next(((i.get("status", ""), i.get("cause", "")) for k in TRAFFIC_KEYS.get(line, [])
+                             for i in [traffic.get(k)] if i), ("", ""))])
         for t in trains:
             no = str(t.get("no", ""))
             cars = [c for u in (monitor.get(no) or []) for c in (u.get("cars") or [])]
@@ -252,7 +307,7 @@ def collect(now):
                    ["時刻", "路線", "列車番号", "種別", "行先", "方向", "位置", "遅延分", "号車:乗車率:状態:温度"], rows)
     append_csv(f"{COND}/{now:%Y-%m-%d}.csv",
                ["時刻", "路線", "在線", "遅延1分以上", "遅延5分以上", "遅延10分以上", "最大遅延", "遅延合計",
-                "1時間雨量", "10分雨量", "風速", "気温", "観測時刻", "観測地点"], conds)
+                "1時間雨量", "10分雨量", "風速", "気温", "観測時刻", "観測地点", "運行情報", "原因"], conds)
     with open("data/latest.json", "w", encoding="utf-8") as f:
         json.dump(latest, f, ensure_ascii=False, separators=(",", ":"))
     if monitor:
@@ -262,7 +317,8 @@ def collect(now):
     with open("data/status.json", "w", encoding="utf-8") as f:
         json.dump({"last": now.strftime("%Y-%m-%d %H:%M"), "trainsWithData": len(rows),
                    "monitorTrains": len(monitor), "errors": errors, "weatherTime": wx_time,
-                   "weatherPoints": {LINES[k]: [x[0] for x in v] for k, v in wx.items()}},
+                   "weatherPoints": {LINES[k]: [x[0] for x in v] for k, v in wx.items()},
+                   "trafficNow": {k: {"status": v.get("status"), "cause": v.get("cause")} for k, v in traffic.items()}},
                   f, ensure_ascii=False)
     print(f"記録 {len(rows)}本／天気 {wx_time or '取得失敗'}")
 
@@ -290,9 +346,8 @@ def load_day(ds):
                             continue
                         if pct >= 0:
                             cl.append((car, pct))
-                    if cl:
-                        raw.append((tm, int(tm[:2]) * 60 + int(tm[3:5]), line, no, typ, dest,
-                                    int(dr) if dr.isdigit() else 0, sec, int(num(delay) or 0), tuple(cl)))
+                    raw.append((tm, int(tm[:2]) * 60 + int(tm[3:5]), line_fix(line, sec), no, typ, dest,
+                                int(dr) if dr.isdigit() else 0, sec, int(num(delay) or 0), tuple(cl)))
     raw.sort(key=lambda r: r[0])                 # 5分ごと・30秒ごとの記録を時刻順に並べる
     p = f"{COND}/{ds}.csv"
     if os.path.exists(p):
@@ -304,7 +359,9 @@ def load_day(ds):
                     continue
                 cond[(row[0], row[1])] = {"n": int(row[2]), "d1": int(row[3]), "d5": int(row[4]),
                                           "d10": int(row[5]), "dmax": int(row[6]),
-                                          "rain": num(row[8]), "wind": num(row[10])}
+                                          "rain": num(row[8]), "wind": num(row[10]),
+                                          "info": row[14] if len(row) > 14 else "",
+                                          "cause": row[15] if len(row) > 15 else ""}
     return raw, cond
 
 
@@ -345,10 +402,13 @@ def all_dates():
 # ================= 週間・月間の統計 =================
 def periods_of(d):
     y, w, _ = d.isocalendar()
-    return f"W{y}-{w:02d}", f"M{d:%Y-%m}"
+    return f"W{y}-{w:02d}", f"M{d:%Y-%m}", f"D{d.isoformat()}"
 
 
 def period_range(pid):
+    if pid[0] == "D":
+        d = dt.date.fromisoformat(pid[1:])
+        return d, d
     if pid[0] == "W":
         y, w = map(int, pid[1:].split("-"))
         s = dt.date.fromisocalendar(y, w, 1)
@@ -373,7 +433,7 @@ def aggregate(pid, days):
     runs = set()
     eps = defaultdict(list)
     train_days = defaultdict(set)
-    zero = lambda: [0] * 11  # 記録回数, 遅延発生回数, 最大遅延合計, 号車観測数, 多く以上, 大変多く以上, とても混雑, (うち特急)観測数, 多く, 大変多く, とても
+    zero = lambda: [0] * 14  # [11]運行情報あり [12]原因に「雨」 [13]原因に「風」 ／ 記録回数, 遅延発生回数, 最大遅延合計, 号車観測数, 多く以上, 大変多く以上, とても混雑, (うち特急)観測数, 多く, 大変多く, とても
     cst = {k: {"rain": [zero() for _ in range(len(RAIN_BINS) + 1)],
                "wind": [zero() for _ in range(len(WIND_BINS) + 1)],
                "delay": [[0] * 8, [0] * 8]} for k in L}
@@ -408,6 +468,9 @@ def aggregate(pid, days):
                 b[0] += 1
                 b[1] += c["d5"] > 0
                 b[2] += c["dmax"]
+                b[11] += bool(c.get("info") or c.get("cause"))
+                b[12] += "雨" in c.get("cause", "")
+                b[13] += "風" in c.get("cause", "")
         for r in passages(raw):
             tm, mi, line, no, typ, dest, dr, secn, delay, cars = r
             runs.add(ds + tm)
@@ -659,6 +722,104 @@ def patrol(dates):
     return {"S": S, "L": L, "days": len(dates), "from": dates[0] if dates else "", "trains": trains}
 
 
+# ================= 時刻表（実測）・走行記録 =================
+def merged_patterns(month_file):
+    """月間統計の混雑パターンを、列車・平日/土休日・レベルごとに号車をまとめた形にする"""
+    out = {}
+    if not os.path.exists(month_file):
+        return out
+    with open(month_file, encoding="utf-8") as f:
+        M = json.load(f)
+    S = M.get("S", [])
+    for p in M.get("pat", []):
+        no, car, dty, Lv, dh, dtot, st, en, ss, es, ps, mx, avg = p[:13]
+        key = (no, dty, Lv)
+        cur = out.get(key)
+        if cur is None or dh > cur["days"]:
+            out[key] = cur = {"days": dh, "total": dtot, "s": st, "e": en, "from": S[ss], "to": S[es],
+                              "peak": S[ps], "cars": {}}
+        cur["cars"][car] = max(cur["cars"].get(car, 0), mx)
+        cur["s"], cur["e"] = min(cur["s"], st), max(cur["e"], en)
+    res = defaultdict(dict)
+    for (no, dty, Lv), v in out.items():
+        res[no].setdefault(str(dty), {})[str(Lv)] = [v["s"], v["e"], v["from"], v["to"], v["peak"],
+                                                      sorted(v["cars"].items()), v["days"], v["total"]]
+    return res
+
+
+def timetable(dates, pats):
+    """各駅・方向ごとに、列車の到着時刻（複数日の中央値）と、発車直後の混雑をまとめる"""
+    acc = {}
+    train_days = defaultdict(set)
+    for ds in dates:
+        dty = day_type(dt.date.fromisoformat(ds))
+        raw, _ = load_day(ds)
+        by_train = defaultdict(list)
+        for r in raw:
+            by_train[r[3]].append(r)
+        for no, obs in by_train.items():
+            obs.sort(key=lambda r: r[0])
+            train_days[(dty, no)].add(ds)
+            done = set()
+            for i, r in enumerate(obs):
+                if not r[7].endswith("駅"):
+                    continue
+                stn = norm(r[7][:-1])
+                if stn in done:
+                    continue
+                done.add(stn)
+                nxt = next((x for x in obs[i + 1:] if x[7] != r[7]), None)   # 発車直後の区間
+                use = nxt if nxt and nxt[1] - r[1] <= 6 and nxt[9] else r
+                k = (dty, r[2], stn, r[6], no)
+                a = acc.setdefault(k, {"m": [], "days": set(), "hit": Counter(), "cars": defaultdict(list),
+                                       "typ": r[4], "dest": r[5]})
+                a["m"].append(r[1])
+                a["days"].add(ds)
+                if use[9]:
+                    mx = max(p for _, p in use[9])
+                    for Lv in LEVELS:
+                        a["hit"][Lv] += lv_of(mx) >= Lv
+                    for car, p in use[9]:
+                        a["cars"][car].append(p)
+    out = {k: {"stations": [[i, n] for i, n in v], "tt": {"0": {}, "1": {}}, "pat": {}} for k, v in LINE_STATIONS.items()}
+    for (dty, line, stn, dr, no), a in acc.items():
+        if line not in out or stn not in _LSET[line]:
+            continue
+        n = len(a["days"])
+        if n < 2:                       # 2日以上その駅で観測された列車だけ（通過の可能性を減らす）
+            continue
+        row = [int(statistics.median(a["m"])), no, a["typ"], a["dest"], n, len(train_days[(dty, no)]),
+               *[round(a["hit"][Lv] / n, 2) for Lv in LEVELS],
+               [[c, int(statistics.median(v))] for c, v in sorted(a["cars"].items())]]
+        out[line]["tt"][str(dty)].setdefault(stn, {}).setdefault(str(dr), []).append(row)
+        if no in pats:
+            out[line]["pat"][no] = pats[no]
+    for line in out.values():
+        for d in line["tt"].values():
+            for st in d.values():
+                for rows in st.values():
+                    rows.sort()
+    return out
+
+
+def trainlogs(dates):
+    """列車ごとの最新の走行記録（号車別の乗車率の推移）"""
+    logs = {}
+    for ds in reversed(dates[-3:]):
+        raw, _ = load_day(ds)
+        by = defaultdict(list)
+        for r in raw:
+            if r[9]:
+                by[r[3]].append(r)
+        for no, obs in by.items():
+            if no in logs:
+                continue
+            obs.sort(key=lambda r: r[0])
+            logs[no] = {"date": ds, "typ": obs[0][4], "dest": obs[0][5],
+                        "rows": [[r[0], r[7], [[c, p] for c, p in r[9]]] for r in obs]}
+    return logs
+
+
 # ================= 出力 =================
 def report(now):
     today = now.date()
@@ -670,6 +831,10 @@ def report(now):
     os.makedirs(STATS, exist_ok=True)
     for pid, days in by_period.items():
         out = f"{STATS}/{pid}.json"
+        if pid[0] == "D" and (today - period_range(pid)[0]).days > DAILY_KEEP:
+            if os.path.exists(out):
+                os.remove(out)
+            continue
         if period_range(pid)[1] < today and os.path.exists(out):
             with open(out, encoding="utf-8") as f:
                 if json.load(f).get("v") == STATS_VERSION:
@@ -679,7 +844,7 @@ def report(now):
     cutoff = today - dt.timedelta(days=RAW_KEEP_DAYS)
     for p in glob.glob(f"{RAW}/*.csv") + glob.glob(f"{COND}/*.csv"):
         d = dt.date.fromisoformat(os.path.basename(p)[:10])
-        if d < cutoff and all(os.path.exists(f"{STATS}/{x}.json") for x in periods_of(d)):
+        if d < cutoff and all(os.path.exists(f"{STATS}/{x}.json") for x in periods_of(d)[:2]):
             os.remove(p)
     dates = all_dates()
     shutil.rmtree(SITE, ignore_errors=True)
@@ -688,6 +853,15 @@ def report(now):
         json.dump(timeline(dates[-TIMELINE_DAYS:]), f, ensure_ascii=False, separators=(",", ":"))
     with open(f"{SITE}/stats/predict.json", "w", encoding="utf-8") as f:
         json.dump(predict(dates[-PREDICT_DAYS:], now), f, ensure_ascii=False, separators=(",", ":"))
+    month = f"{STATS}/M{today:%Y-%m}.json"
+    tt = timetable(dates[-28:], merged_patterns(month))
+    for line, v in tt.items():
+        with open(f"{SITE}/stats/timetable_{line}.json", "w", encoding="utf-8") as f:
+            json.dump(v, f, ensure_ascii=False, separators=(",", ":"))
+    os.makedirs(f"{SITE}/stats/trainlog", exist_ok=True)
+    for no, v in trainlogs(dates).items():
+        with open(f"{SITE}/stats/trainlog/{no}.json", "w", encoding="utf-8") as f:
+            json.dump(v, f, ensure_ascii=False, separators=(",", ":"))
     with open(f"{SITE}/stats/patrol.json", "w", encoding="utf-8") as f:
         json.dump(patrol(dates[-PREDICT_DAYS:]), f, ensure_ascii=False, separators=(",", ":"))
     ids = sorted((os.path.basename(p)[:-5] for p in glob.glob(f"{STATS}/*.json")), reverse=True)
@@ -704,7 +878,8 @@ def report(now):
     for src, dst in (("stats.html", "index.html"), ("weather.html", "weather.html"), ("predict.html", "predict.html"),
                      ("monitor.html", "monitor.html"), ("patrol.html", "patrol.html"),
                      ("schools.json", "stats/schools.json"), ("station_notes.json", "stats/station_notes.json"),
-                     ("incidents.json", "stats/incidents.json")):
+                     ("incidents.json", "stats/incidents.json"), ("timetable.html", "timetable.html"),
+                     ("trend.js", "trend.js")):
         if os.path.exists(os.path.join(here, src)):
             shutil.copy(os.path.join(here, src), f"{SITE}/{dst}")
     with open("data/last_publish.txt", "w") as f:
