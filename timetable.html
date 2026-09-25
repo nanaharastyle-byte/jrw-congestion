@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>時刻表と混雑</title>
+<style>
+:root{--bg:#eef2f6;--paper:#fff;--ink:#1a2230;--sub:#5b6577;--rule:#d5dce6;--acc:#0072bc;
+ --l1:#6fb3e8;--l2:#58a7a4;--l3:#1f9a86;--l4:#9cc54a;--l5:#c9982c;--l6:#b8407e;--l7:#3d3fa0;--rain:#2f7fd1;--wind:#1f9a86;--delay:#c23b22}
+@media (prefers-color-scheme:dark){:root{--bg:#141a22;--paper:#1d2530;--ink:#e8edf3;--sub:#9aa6b8;--rule:#2e3947}}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px;line-height:1.5;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+nav{display:flex;background:var(--acc)}
+nav a{flex:1;text-align:center;color:#fff;text-decoration:none;font-size:11px;font-weight:700;padding:8px 0;opacity:.75}
+nav a[aria-current=page]{opacity:1;box-shadow:inset 0 -3px 0 #fff}
+header{background:var(--paper);border-bottom:1px solid var(--rule);padding:12px}
+h1{font-size:18px;margin:0}
+.meta{color:var(--sub);font-size:12px;margin-top:2px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+select{width:100%;font-size:14px;padding:6px;border-radius:6px;border:1px solid var(--rule);background:var(--bg);color:var(--ink)}
+.seg{display:flex;margin-top:10px;border:1px solid var(--acc);border-radius:8px;overflow:hidden}
+.seg button{flex:1;border:0;background:transparent;color:var(--acc);font-size:13px;font-weight:700;padding:7px 0}
+.seg button[aria-pressed=true]{background:var(--acc);color:#fff}
+button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #f5b400;outline-offset:1px}
+main{padding:10px;max-width:760px;margin:0 auto}
+h2{font-size:15px;margin:16px 0 6px}
+.item{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:9px 10px;margin-bottom:6px;display:grid;grid-template-columns:1.8em 1fr auto;gap:8px;align-items:center}
+.rank{font-weight:700;color:var(--sub);text-align:right}
+.ttl{font-weight:700}
+.sub{color:var(--sub);font-size:12px}
+.when{font-size:13px;font-weight:700;color:var(--acc)}
+.num{text-align:right;font-weight:700;font-size:18px;white-space:nowrap}
+.num small{display:block;font-size:11px;color:var(--sub);font-weight:400}
+.bar{height:5px;border-radius:3px;background:var(--rule);margin-top:4px;overflow:hidden}
+.bar i{display:block;height:100%}
+.note{font-size:12px;color:var(--sub);margin:8px 0}
+.warn{background:#fff4d6;color:#6b4c00;border-radius:6px;padding:8px;font-size:13px;margin:8px 0}
+.empty{color:var(--sub);padding:24px 0;text-align:center}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:10px;margin-bottom:8px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;font-size:12px;width:100%}
+th{color:var(--sub);font-weight:400;padding:4px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--rule)}
+td{padding:4px;border-bottom:1px solid var(--rule);white-space:nowrap}
+.chip{display:inline-block;font-size:11px;border-radius:10px;padding:0 7px;margin:3px 4px 0 0;background:var(--bg);color:var(--sub)}
+
+
+.tt{background:var(--paper);border:1px solid var(--rule);border-radius:6px;overflow:hidden}
+.tt .hr{display:flex;border-bottom:1px solid var(--rule)}
+.tt .h{width:42px;flex:none;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;background:var(--bg);border-right:1px solid var(--rule)}
+.tt .ms{display:flex;flex-wrap:wrap;gap:2px 4px;padding:4px 6px;flex:1;min-height:44px;align-items:flex-start}
+.dep{position:relative;width:40px;text-align:center;padding:3px 0 2px;border:0;background:transparent;color:var(--ink);font:inherit;cursor:pointer;border-radius:6px}
+.dep .m{font-size:16px;font-weight:700;line-height:26px;font-variant-numeric:tabular-nums}
+.dep .d{font-size:9px;color:var(--sub);white-space:nowrap;overflow:hidden;margin-top:3px}
+.dep.hot::before{content:"";position:absolute;left:50%;top:1px;width:30px;height:30px;margin-left:-15px;border-radius:50%;border:3px solid var(--mk);box-sizing:border-box}
+.t-sr{color:#d7263d}.t-r{color:#e07b00}.t-kr{color:#8a4fd1}.t-ex{color:#1f8a4c}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--sub);margin:6px 0}
+.ring{display:inline-block;width:12px;height:12px;border-radius:50%;border:3px solid;vertical-align:-2px;margin-right:3px;box-sizing:border-box}
+.tr-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.tr-box{background:var(--paper);color:var(--ink);width:100%;max-width:760px;max-height:88%;overflow:auto;border-radius:14px 14px 0 0;padding:14px 12px calc(14px + env(safe-area-inset-bottom))}
+.tr-head{display:flex;justify-content:space-between;gap:8px}.tr-head h3{margin:0;font-size:16px}
+.tr-x{border:0;background:var(--bg);color:inherit;border-radius:50%;width:32px;height:32px;font-size:18px}
+.cars{display:flex;gap:3px;flex-wrap:wrap;margin:4px 0}.car{min-width:40px;text-align:center;border-radius:3px;padding:2px;font-size:11px;color:#fff}.car b{display:block}
+.prob{display:grid;grid-template-columns:7em 1fr 3em;gap:4px;align-items:center;font-size:12px}
+.prob i{display:block;height:8px;border-radius:4px}
+.btn{margin-top:10px;width:100%;padding:9px;border:0;border-radius:8px;background:var(--acc);color:#fff;font-weight:700;font-size:14px}
+</style></head><body>
+<nav><a href="index.html">統計</a><a href="weather.html">天気</a><a href="predict.html">予測</a><a href="monitor.html">在線</a><a href="timetable.html" aria-current="page">時刻表</a><a href="patrol.html">巡回</a></nav>
+<header>
+ <h1>時刻表と混雑</h1><div class="meta" id="meta">読み込み中…</div>
+ <div class="grid">
+  <select id="line" aria-label="路線"><option value="kyoto">JR京都線</option><option value="hokurikubiwako">琵琶湖線</option><option value="sagano">嵯峨野線</option><option value="nara">奈良線</option></select>
+  <select id="stn" aria-label="駅"></select>
+  <select id="dir" aria-label="方向"></select>
+  <select id="dty" aria-label="曜日"><option value="0">平日</option><option value="1">土休日</option></select>
+  <select id="lv" aria-label="混雑の印"><option value="4">○＝吊り革以上</option><option value="5">○＝多く以上</option><option value="6">○＝大変多く以上</option><option value="7">○＝とても混雑のみ</option></select>
+  <select id="th" aria-label="確率"><option value="0.5">混む日が半分以上</option><option value="0.3">混む日が3割以上</option><option value="0.7">混む日が7割以上</option></select>
+ </div>
+</header>
+<main>
+ <div class="legend" id="legend"></div>
+ <div id="out"><div class="empty">読み込み中…</div></div>
+ <p class="note">・時刻はJR西日本の走行位置データから作った実測値（過去4週間でその駅にいた時刻の中央値）で、公式の時刻表ではありません。数分ずれることがあります。<br>・2日以上その駅で観測された列車を載せています。通過列車が混じる可能性があります。<br>・○はその駅を出た直後に、いずれかの号車が選んだ混雑レベル以上になった日の割合で付けています。色は混雑の段階です。</p>
+</main>
+<script src="trend.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hm=m=>Math.floor(m/60)+':'+String(m%60).padStart(2,'0');
+let T=[40,60,80,100,130,160];
+const SHORT=['','空席','ほぼ満席','ゆったり立','吊り革','多い','大変多い','とても混雑'],DIRN={"0":"上り","1":"下り"},DT=['平日','土休日'];
+const lvP=p=>{let l=1;for(const t of T)if(p>=t)l++;return l};
+const tcls=t=>/特急/.test(t)?'t-ex':/新快速/.test(t)?'t-sr':/区間快速/.test(t)?'t-kr':/快速/.test(t)?'t-r':'';
+const tab=t=>/特急/.test(t)?'特':/新快速/.test(t)?'新':/区間快速/.test(t)?'区':/快速/.test(t)?'快':'';
+let TT={},cur=null;
+async function loadLine(){
+ const line=$('line').value;
+ if(!TT[line]){try{TT[line]=await (await fetch(`stats/timetable_${line}.json`,{cache:'no-store'})).json()}catch(e){$('out').innerHTML='<div class="empty">時刻表データがまだありません</div>';return}}
+ cur=TT[line];const keep=$('stn').value;
+ $('stn').innerHTML=cur.stations.map(([id,n])=>`<option value="${esc(n)}"${n===keep?' selected':''}>${esc(id)} ${esc(n)}</option>`).join('');
+ fillDir();
+}
+function fillDir(){
+ const st=cur?.tt?.[$('dty').value]?.[$('stn').value]||{},keep=$('dir').value;
+ const opts=['0','1'].map(d=>{const rows=st[d]||[],c={};rows.forEach(r=>c[r[3]]=(c[r[3]]||0)+1);
+  const top=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0]).join('・');
+  return `<option value="${d}"${d===keep?' selected':''}>${DIRN[d]}${top?`（${esc(top)}方面）`:''}</option>`});
+ $('dir').innerHTML=opts.join('');render();
+}
+function mark(r){const L=+$('lv').value,th=+$('th').value;let best=0;
+ for(let l=7;l>=L;l--)if(r[6+l-4]>=th){best=l;break}return best}
+function render(){
+ if(!cur)return;
+ const rows=cur.tt?.[$('dty').value]?.[$('stn').value]?.[$('dir').value]||[];
+ const L=+$('lv').value;
+ $('legend').innerHTML=[4,5,6,7].filter(l=>l>=L).map(l=>`<span><span class="ring" style="border-color:var(--l${l})"></span>${SHORT[l]}</span>`).join('')+
+  '<span><b class="t-sr">新</b>新快速 <b class="t-r">快</b>快速 <b class="t-kr">区</b>区間快速 <b class="t-ex">特</b>特急</span>';
+ if(!rows.length){$('out').innerHTML='<div class="empty">この駅・方向の記録がまだありません（JRの走行位置データの範囲外の駅は表示できません）</div>';return}
+ const by={};for(const r of rows)(by[Math.floor(r[0]/60)]||(by[Math.floor(r[0]/60)]=[])).push(r);
+ let h='<div class="tt">';
+ for(const hr of Object.keys(by).map(Number).sort((a,b)=>a-b)){
+  h+=`<div class="hr"><div class="h">${hr}</div><div class="ms">`+by[hr].map((r,i)=>{const mk=mark(r);
+   return `<button class="dep${mk?' hot':''}" style="${mk?`--mk:var(--l${mk})`:''}" data-i="${rows.indexOf(r)}" aria-label="${hm(r[0])} ${esc(r[2])} ${esc(r[3])}行${mk?' '+SHORT[mk]:''}">
+    <div class="m ${tcls(r[2])}">${String(r[0]%60).padStart(2,'0')}</div><div class="d"><b class="${tcls(r[2])}">${tab(r[2])}</b>${esc(String(r[3]).slice(0,2))}</div></button>`}).join('')+'</div></div>'}
+ $('out').innerHTML=h+'</div>';
+ $('out').querySelectorAll('.dep').forEach(b=>b.onclick=()=>detail(rows[+b.dataset.i]));
+ $('meta').textContent=`${$('stn').value}駅 ${DIRN[$('dir').value]}・${DT[+$('dty').value]}　${rows.length}本（実測）`;
+}
+function detail(r){
+ const[m,no,typ,dest,n,nt,p4,p5,p6,p7,cars]=r,dty=$('dty').value,ps=[p4,p5,p6,p7];
+ const pat=cur.pat?.[no]?.[dty]||{},L=+$('lv').value;
+ // 選んだレベル以上で、混んだ日数が最も多いパターンを表示（なければ全レベルから）
+ const cand=[7,6,5,4].map(l=>[l,pat[l]]).filter(x=>x[1]);
+ const pick=a=>a.sort((x,y)=>y[1][6]-x[1][6]||y[0]-x[0])[0];
+ const pk=pick(cand.filter(x=>x[0]>=L))||pick(cand);
+ let h=`<div class="tr-head"><h3>${esc(no)} <span class="${tcls(typ)}">${esc(typ)}</span> ${esc(dest)}行</h3><button class="tr-x" aria-label="閉じる">×</button></div>
+  <div class="sub">${esc($('stn').value)}駅 ${hm(m)}頃（実測・${n}日観測／この列車は${nt}日走行）</div>
+  <h2>この駅を出た直後に混む日の割合</h2>`+[4,5,6,7].map((l,i)=>`<div class="prob"><span>${SHORT[l]}以上</span><i style="width:${Math.max(2,ps[i]*100)}%;background:var(--l${l})"></i><span>${Math.round(ps[i]*100)}%</span></div>`).join('');
+ if(pk){const[l,v]=pk;const[s,e,fr,to,peak,pc,d,tot]=v;
+  h+=`<h2>混雑時間・混雑区間（${SHORT[l]}以上）</h2><div class="card"><div class="when">${hm(s)}〜${hm(e)}（約${e-s}分）</div>
+   <div>${esc(fr)}${fr!==to?' → '+esc(to):''}</div><div class="sub">最も混む区間 ${esc(peak)}・${d}/${tot}日で発生（今月の記録）</div>
+   <div class="sub">混む号車：${pc.map(([c,x])=>`${c}号車（最大${x}%）`).join('・')}</div></div>`}
+ else h+='<p class="sub">今月の記録では、まとまった混雑パターンはありません。</p>';
+ if(cars.length)h+=`<h2>この駅を出た直後の号車別の乗車率（中央値）</h2><div class="cars">`+cars.map(([c,p])=>{const l=lvP(p);return`<div class="car" style="background:var(--l${l});${l===1||l===4?'color:#1a2230':''}"><b>${c}号車</b>${p}%</div>`}).join('')+'</div>';
+ else h+='<p class="sub">この列車は混雑データの提供対象外です。</p>';
+ if(cars.length)h+=`<button class="btn" id="tbtn">号車ごとの乗車率の推移を見る</button>`;
+ const ov=document.createElement('div');ov.className='tr-ov';ov.innerHTML=`<div class="tr-box" role="dialog">${h}</div>`;document.body.appendChild(ov);
+ ov.onclick=e=>{if(e.target===ov)ov.remove()};ov.querySelector('.tr-x').onclick=()=>ov.remove();
+ const tb=ov.querySelector('#tbtn');if(tb)tb.onclick=()=>{ov.remove();showTrend(no,`${no} ${typ} ${dest}行`)};
+}
+(async()=>{try{const i=await (await fetch('stats/index.json',{cache:'no-store'})).json();if(i.T)T=i.T}catch(e){}
+ $('line').onchange=loadLine;$('stn').onchange=fillDir;$('dty').onchange=fillDir;['dir','lv','th'].forEach(id=>$(id).onchange=render);loadLine()})();
+</script></body></html>
