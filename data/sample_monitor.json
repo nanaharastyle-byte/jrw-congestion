@@ -1,45 +1,91 @@
 {
- "1525H": [
+ "1004M": [
   {
    "cars": [
     {
      "carNo": 1,
      "status": 1,
-     "congestion": 27,
-     "temp": 22,
-     "facilities": [
-      1,
-      2,
-      4
-     ],
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
      "types": []
     },
     {
      "carNo": 2,
      "status": 1,
-     "congestion": 45,
-     "temp": 26,
+     "congestion": -1,
+     "temp": -1,
      "facilities": [],
-     "types": [
-      3
-     ]
+     "types": []
     },
     {
      "carNo": 3,
      "status": 1,
-     "congestion": 13,
-     "temp": 22,
+     "congestion": -1,
+     "temp": -1,
      "facilities": [],
      "types": []
     },
     {
      "carNo": 4,
      "status": 1,
-     "congestion": 20,
-     "temp": 21,
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 5,
+     "status": 1,
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 6,
+     "status": 1,
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
+     "types": []
+    }
+   ]
+  },
+  {
+   "cars": [
+    {
+     "carNo": 7,
+     "status": 1,
+     "congestion": 53,
+     "temp": 24,
      "facilities": [
-      1,
-      2
+      3,
+      4,
+      5
+     ],
+     "types": []
+    },
+    {
+     "carNo": 8,
+     "status": 1,
+     "congestion": 98,
+     "temp": 24,
+     "facilities": [
+      3,
+      4,
+      5
+     ],
+     "types": []
+    },
+    {
+     "carNo": 9,
+     "status": 1,
+     "congestion": 82,
+     "temp": 24,
+     "facilities": [
+      3,
+      5
      ],
      "types": []
     }
