@@ -10,7 +10,7 @@
 html{scroll-padding-top:env(safe-area-inset-top)}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px;line-height:1.5;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
 nav{display:flex;background:var(--acc)}
-nav a{flex:1;text-align:center;color:#fff;text-decoration:none;font-size:12px;font-weight:700;padding:8px 0;opacity:.75}
+nav a{flex:1;text-align:center;color:#fff;text-decoration:none;font-size:11px;font-weight:700;padding:8px 0;opacity:.75}
 nav a[aria-current=page]{opacity:1;box-shadow:inset 0 -3px 0 #fff}
 header{background:var(--paper);border-bottom:1px solid var(--rule);padding:12px}
 h1{font-size:18px;margin:0}
@@ -46,12 +46,12 @@ td{padding:4px;border-bottom:1px solid var(--rule);white-space:nowrap}
 .dist i{display:block;height:100%}
 .legend{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--sub);margin-top:6px}
 .sw{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:3px;vertical-align:-1px}
-.heatwrap{overflow-x:auto;background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:6px}
+.x-heatwrap{overflow-x:auto;background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:6px}
 .heat{width:auto;font-size:11px}.heat th{text-align:center;border:0}
 .heat td{width:34px;min-width:34px;height:26px;text-align:center;border:1px solid var(--bg);padding:0}
 .row2{display:flex;gap:6px;margin-bottom:8px}
 </style></head><body>
-<nav><a href="index.html" aria-current="page">統計</a><a href="weather.html">天気×遅延</a><a href="predict.html">予測</a><a href="monitor.html">在線</a><a href="patrol.html">巡回</a></nav>
+<nav><a href="index.html" aria-current="page">統計</a><a href="weather.html">天気</a><a href="predict.html">予測</a><a href="monitor.html">在線</a><a href="timetable.html">時刻表</a><a href="patrol.html">巡回</a></nav>
 <header>
  <h1>混雑統計</h1><div class="meta" id="meta">読み込み中…</div>
  <div class="grid">
@@ -60,12 +60,11 @@ td{padding:4px;border-bottom:1px solid var(--rule);white-space:nowrap}
   <select id="dt" aria-label="曜日"><option value="">全日</option><option value="0">平日</option><option value="1">土休日</option></select>
   <select id="hr" aria-label="時間帯"><option value="">全時間帯</option><option value="5-9">朝 5〜9時台</option><option value="10-15">昼 10〜15時台</option><option value="16-19">夕 16〜19時台</option><option value="20-24">夜 20時台以降</option></select>
   <select id="lv" aria-label="混雑レベル"><option value="6">大変多く以上</option><option value="7">とても混雑のみ</option><option value="5">多く以上</option><option value="4">吊り革以上</option></select>
-  <select id="split" aria-label="区間の分け方"><option value="car">区間×号車</option><option value="sec">区間のみ</option></select>
   <select id="tg" aria-label="種別"><option value="0" selected>特急を除く</option><option value="">特急を含む</option><option value="1">特急のみ</option></select>
   <select id="order" aria-label="並び順"><option value="count">並び＝回数順</option><option value="time">並び＝時刻順</option></select>
  </div>
  <div class="seg" role="group" aria-label="表示">
-  <button data-v="pat" aria-pressed="true">混雑パターン</button><button data-v="sec" aria-pressed="false">混雑区間</button><button data-v="train" aria-pressed="false">混雑列車</button><button data-v="heat" aria-pressed="false">時間×号車</button>
+  <button data-v="pat" aria-pressed="true">混雑パターン</button><button data-v="dur" aria-pressed="false">混雑時間</button><button data-v="sec" aria-pressed="false">混雑区間</button><button data-v="train" aria-pressed="false">混雑列車</button>
  </div>
 </header>
 <main>
@@ -74,32 +73,34 @@ td{padding:4px;border-bottom:1px solid var(--rule);white-space:nowrap}
  <div id="out"></div>
  <p class="note" id="foot"></p>
 </main>
+<script src="trend.js"></script>
 <script>
 let T=[40,60,80,100,130,160];
 const LBL=['','空席があります','ほぼ、席はうまっています','ゆったり立つことができます','吊り革につかまることができます','多くの方が乗っています','大変多くの方が乗っています','とても混雑しています'];
 const SHORT=['','空席','ほぼ満席','ゆったり立','吊り革','多い','大変多い','とても混雑'];
 const lvOf=b=>{const p=b*10;let l=1;for(const t of T)if(p>=t)l++;return l};
-const DIR={"0":"上り","1":"下り"},DT=['平日','土休日'];
+const DIR={"0":"上り","1":"下り"},DT=['平日','土休日'],WD='日月火水木金土';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const hm=m=>Math.floor(m/60)+':'+String(m%60).padStart(2,'0');
+const pct=(a,q)=>{const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.floor(q*(s.length-1)+.5))]};
 const isExp=typ=>String(typ).includes('特急')?1:0;
 const byTime=()=>$('order').value==='time';
 function tgOK(v){const t=$('tg').value;return t===''||+t===v}
-const pct=(a,q)=>{const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.floor(q*(s.length-1)+.5))]};
 let IDX=null,D=null,view='pat',NOTES=[];
-// ホーム図から確認した停止位置メモ（station_notes.json）。該当があれば号車・ドアの説明を返す
 function noteFor(st,d,car){if(!st)return'';st=String(st).replace(/駅$/,'');
  const n=NOTES.find(x=>x.station===st&&(x.dir==='両方'||x.dir===DIR[d])&&(x.cars||[]).includes(car));
  return n?`${st}駅 ${car}号車：${n.note}${n.door?`（${n.door}番ドア付近）`:''}`:''}
 const orgName=i=>i>=0&&D.S[i]?String(D.S[i]).replace(/駅$/,''):'';
+const carList=cs=>cs.map(c=>c.car).join('・')+'号車';
 const FOOT={
- pat:'混雑パターン＝同じ列車・号車が「選んだレベル以上」の状態で続いた時間と区間。開始・終了時刻は複数日の中央値。「◯◯駅から混雑」は混雑が始まった直前の停車駅（2日以上その駅で観測された駅を停車駅とみなす）。🚪はホーム図で確認した停止位置メモ。',
- sec:'回数＝1列車が1区間を通過するごとに1回。時間は混雑した時刻の中心80%の範囲。「◯◯駅から混雑」は、混雑していたときの直前の停車駅です。',
- train:'回数＝その列車・号車が区間を通過するごとに1回。',
- heat:'数字＝その時間帯・号車で選んだレベル以上だった割合(%)。「·」は記録3件未満。'};
+ pat:'混雑パターン＝同じ列車が「選んだレベル以上」の状態で続いた時間と区間。同じ時間帯に混んだ号車はまとめて表示。「◯◯駅から混雑」は直前の停車駅。タップで号車ごとの乗車率の推移を表示。',
+ dur:'混雑時間＝同じ列車で混雑が続いた時間の長い順。時刻は複数日の中央値。タップで号車ごとの推移を表示。',
+ sec:'回数＝1列車が1区間を通過するごとに1回。時間は混雑した時刻の中心80%の範囲。号車は混んだ回数の多い順。',
+ train:'回数＝その列車が区間を通過するごとに1回（号車ごと）。タップで号車ごとの推移を表示。'};
 
-function plabel(id){const[y,n]=id.slice(1).split('-').map(Number);if(id[0]==='M')return `月間 ${y}年${n}月`;
+function plabel(id){const x=id.slice(1);if(id[0]==='D'){const d=new Date(x+'T12:00:00+09:00');return `日別 ${d.getMonth()+1}/${d.getDate()}(${WD[d.getDay()]})`}
+ const[y,n]=x.split('-').map(Number);if(id[0]==='M')return `月間 ${y}年${n}月`;
  const j=new Date(Date.UTC(y,0,4)),mon=new Date(j-((j.getUTCDay()+6)%7)*864e5+(n-1)*7*864e5),sun=new Date(+mon+6*864e5);
  const f=d=>`${d.getUTCMonth()+1}/${d.getUTCDate()}`;return `週間 ${f(mon)}〜${f(sun)}`}
 async function init(){
@@ -107,11 +108,11 @@ async function init(){
  try{IDX=await (await fetch('stats/index.json',{cache:'no-store'})).json()}catch(e){$('meta').textContent='統計データがまだありません';return}
  if(IDX.T)T=IDX.T;
  const st=IDX.status||{};
- $('meta').textContent=`更新 ${IDX.built}／最終記録 ${st.last||'-'}（混雑データあり ${st.trainsWithData??'-'}本）`;
+ $('meta').textContent=`更新 ${IDX.built}／最終記録 ${st.last||'-'}`;
  if(st.errors&&st.errors.length)$('warn').innerHTML=`<div class="warn">直近の取得エラー: ${esc(st.errors.join(' / '))}</div>`;
  $('line').innerHTML='<option value="">全路線</option>'+Object.entries(IDX.lines).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
- const ws=IDX.periods.filter(p=>p[0]==='W'),ms=IDX.periods.filter(p=>p[0]==='M');
- $('period').innerHTML=[...ws,...ms].map(p=>`<option value="${p}">${plabel(p)}</option>`).join('');
+ const g=(c,label)=>{const ps=IDX.periods.filter(p=>p[0]===c);return ps.length?`<optgroup label="${label}">`+ps.map(p=>`<option value="${p}">${plabel(p)}</option>`).join('')+'</optgroup>':''};
+ $('period').innerHTML=g('W','週間')+g('M','月間')+g('D','日別');
  if(!IDX.periods.length){$('out').innerHTML='<div class="empty">まだ集計できるデータがありません</div>';return}
  await loadPeriod();
 }
@@ -131,82 +132,83 @@ function renderDist(rows){
  $('dist').innerHTML=n?c.map((v,l)=>l&&v?`<i style="width:${v/n*100}%;background:var(--l${l})" title="${LBL[l]}"></i>`:'').join(''):'';
  $('legend').innerHTML=c.map((v,l)=>l?`<span><span class="sw" style="background:var(--l${l})"></span>${SHORT[l]} ${n?Math.round(v/n*100):0}%</span>`:'').join('')+`<span>計 ${n}件</span>`;
 }
-function item(i,title,when,sub,hit,all,max,l,unit='回'){
- return `<div class="item"><div class="rank">${i+1}</div><div><div class="ttl">${title}</div>${when?`<div class="when">${when}</div>`:''}<div class="sub">${sub}</div>
- <div class="bar"><i style="width:${hit/max*100}%;background:var(--l${l})"></i></div></div>
- <div class="num">${hit}${unit}<small>${Math.round(hit/all*100)}%</small></div></div>`}
+function item(i,title,when,sub,num,small,barRatio,l,no){
+ return `<div class="item"${no?` data-no="${esc(no)}" data-title="${esc(title.replace(/<[^>]+>/g,''))}" style="cursor:pointer"`:''}><div class="rank">${i+1}</div><div><div class="ttl">${title}</div>${when?`<div class="when">${when}</div>`:''}<div class="sub">${sub}</div>
+ <div class="bar"><i style="width:${Math.min(100,barRatio*100)}%;background:var(--l${l})"></i></div></div>
+ <div class="num">${num}<small>${small}</small></div></div>`}
 function secPath(a,b){a=D.S[a];b=D.S[b];return a===b?esc(a):esc(a)+' → '+esc(b)}
 
+// 同じ列車・同じ時間帯の混雑パターンを1つにまとめる（号車を並べて表示）
+function mergedPats(min){
+ const L=Math.min(7,Math.max(4,min)),line=$('line').value,dt=$('dt').value,g={};
+ for(const p of D.pat){const m=D.tmeta[p[0]];if(p[3]!==L||!m||!tgOK(isExp(m[1]))||(line&&m[0]!==line)||(dt!==''&&p[2]!=dt))continue;
+  (g[p[0]+'|'+p[2]]||(g[p[0]+'|'+p[2]]=[])).push(p)}
+ const out=[];
+ for(const lst of Object.values(g)){lst.sort((a,b)=>a[6]-b[6]);const cl=[];
+  for(const p of lst){const c=cl.find(c=>Math.abs(c.s0-p[6])<=10);if(c)c.ps.push(p);else cl.push({s0:p[6],ps:[p]})}
+  for(const c of cl){const ps=c.ps,best=ps.reduce((a,b)=>b[4]>a[4]||(b[4]===a[4]&&b[11]>a[11])?b:a),m=D.tmeta[best[0]];
+   const cars=[...new Map(ps.sort((a,b)=>a[1]-b[1]).map(p=>[p[1],{car:p[1],days:p[4],mx:p[11]}])).values()];
+   const s=Math.min(...ps.map(p=>p[6])),e=Math.max(...ps.map(p=>p[7]));
+   if(!hrOK(Math.floor(s/60)))continue;
+   out.push({no:best[0],dty:best[2],L,m,s,e,cars,days:Math.max(...ps.map(p=>p[4])),total:best[5],ss:best[8],es:best[9],ps:best[10],
+    mx:Math.max(...ps.map(p=>p[11])),avg:best[12],org:best[13]??-1})}}
+ return out}
+function patItem(o,i,max,mode){
+ const on=orgName(o.org),nt=o.cars.map(c=>noteFor(on,o.m[3],c.car)).filter(Boolean)[0]||'';
+ const title=`${esc(o.no)} ${esc(o.m[1])} ${esc(o.m[2])}行　${carList(o.cars)}`;
+ const when=`${hm(o.s)}〜${hm(o.e)}　${secPath(o.ss,o.es)}`+(on?`<br>${esc(on)}駅から混雑`:'');
+ const sub=`${IDX.lines[o.m[0]]} ${DIR[o.m[3]]??''}・${DT[o.dty]}　最も混む区間 ${esc(D.S[o.ps])}（最大${o.mx}%）`+
+  (o.cars.length>1?`<br>号車別の最大：${o.cars.map(c=>`${c.car}号車 ${c.mx}%`).join('・')}`:'')+(nt?`<br>🚪 ${esc(nt)}`:'');
+ return mode==='dur'?item(i,title,when,sub+`・${o.days}/${o.total}日`,`${o.e-o.s}分`,'混雑が続く時間',(o.e-o.s)/max,Math.max(o.L,6),o.no)
+  :item(i,title,when,sub,`${o.days}日`,`${o.total}日中 ${Math.round(o.days/o.total*100)}%`,o.days/max,Math.max(o.L,6),o.no)}
 function renderPat(min){
- const line=$('line').value,dt=$('dt').value;
- const list=D.pat.filter(p=>{const m=D.tmeta[p[0]];return p[3]===Math.min(7,Math.max(4,min))&&m&&tgOK(isExp(m[1]))&&(!line||m[0]===line)&&(dt===''||p[2]==dt)&&hrOK(Math.floor(p[6]/60))})
-  .sort((a,b)=>b[4]-a[4]||b[4]/b[5]-a[4]/a[5]||b[11]-a[11]).slice(0,80);
+ let list=mergedPats(min).sort((a,b)=>b.days-a.days||b.days/b.total-a.days/a.total||b.mx-a.mx).slice(0,80);
  if(!list.length)return '<div class="empty">条件に合う混雑パターンはまだありません</div>';
- if(byTime())list.sort((a,b)=>a[6]-b[6]);
- return '<h2>混雑パターン（いつ・どこで・何号車）</h2>'+list.map((p,i)=>{const[no,car,dty,L,dh,dtot,s,e,ss,es,ps,mx,avg,org]=p,m=D.tmeta[no],on=orgName(org??-1),nt=noteFor(on,m[3],car);
-  return item(i,`${esc(no)} ${esc(m[1])} ${esc(m[2])}行　${car}号車`,
-   `${hm(s)}〜${hm(e)}　${secPath(ss,es)}`+(on?`<br>${esc(on)}駅から混雑`:''),
-   `${IDX.lines[m[0]]} ${DIR[m[3]]??''}・${DT[dty]}　最も混む区間 ${esc(D.S[ps])}（最大${mx}%／平均${avg}%）`+(nt?`<br>🚪 ${esc(nt)}`:''),dh,dtot,list[0][4],Math.max(L,6),'日')}).join('');
-}
+ const mx=list[0].days;if(byTime())list.sort((a,b)=>a.s-b.s);
+ return '<h2>混雑パターン（いつ・どこで・何号車）</h2>'+list.map((o,i)=>patItem(o,i,mx,'pat')).join('')}
+function renderDur(min){
+ let list=mergedPats(min).filter(o=>o.e>o.s).sort((a,b)=>(b.e-b.s)-(a.e-a.s)||b.days-a.days).slice(0,80);
+ if(!list.length)return '<div class="empty">条件に合う記録はまだありません</div>';
+ const mx=list[0].e-list[0].s;if(byTime())list.sort((a,b)=>a.s-b.s);
+ return '<h2>混雑が長く続く列車</h2>'+list.map((o,i)=>patItem(o,i,mx,'dur')).join('')}
 function renderSec(rows,min){
- const byCar=$('split').value==='car',dt=$('dt').value,g={};
- for(const[li,d,s,car,h,dty,tg,hs]of rows){const k=[li,d,s,byCar?car:''].join('|');
-  const o=g[k]||(g[k]={li,d,s,car,hit:0,all:0});const[a,x]=tally(hs,min);o.all+=a;o.hit+=x}
+ const dt=$('dt').value,g={};
+ for(const[li,d,s,car,h,dty,tg,hs]of rows){const k=[li,d,s].join('|');
+  const o=g[k]||(g[k]={li,d,s,hit:0,all:0,cars:{}});const[a,x]=tally(hs,min);o.all+=a;o.hit+=x;if(x)o.cars[car]=(o.cars[car]||0)+x}
  const list=Object.values(g).filter(o=>o.hit).sort((a,b)=>b.hit-a.hit||b.hit/b.all-a.hit/a.all).slice(0,60);
  if(!list.length)return '<div class="empty">条件に合う混雑の記録はありません</div>';
  const mx=list[0].hit;
- for(const o of list){
-  const mins=[],orgs={};for(const dty of dt===''?[0,1]:[+dt])for(const[car,tg,a]of D.minIdx[[o.li,o.d,o.s,dty].join('|')]||[]){
-   if((byCar&&car!==o.car)||!tgOK(tg))continue;for(let j=0;j<a.length;j+=3)if(lvOf(a[j])>=min&&hrOK(Math.floor(a[j+1]/60))){mins.push(a[j+1]);if(a[j+2]>=0)orgs[a[j+2]]=(orgs[a[j+2]]||0)+1}}
+ for(const o of list){const mins=[],orgs={};
+  for(const dty of dt===''?[0,1]:[+dt])for(const[car,tg,a]of D.minIdx[[o.li,o.d,o.s,dty].join('|')]||[]){if(!tgOK(tg))continue;
+   for(let j=0;j<a.length;j+=3)if(lvOf(a[j])>=min&&hrOK(Math.floor(a[j+1]/60))){mins.push(a[j+1]);if(a[j+2]>=0)orgs[a[j+2]]=(orgs[a[j+2]]||0)+1}}
   const oe=Object.entries(orgs).sort((x,y)=>y[1]-x[1])[0];
-  o.org=oe?`主に${orgName(+oe[0])}駅から混雑（${Math.round(oe[1]/mins.length*100)}%）`:'';
-  o.note=byCar&&oe?noteFor(orgName(+oe[0]),o.d,o.car):'';
-  o.t=mins.length?pct(mins,.1):9999;o.when=mins.length?`よく混む時間 ${hm(pct(mins,.1))}〜${hm(pct(mins,.9))}`:''}
+  o.t=mins.length?pct(mins,.1):9999;o.when=(mins.length?`よく混む時間 ${hm(pct(mins,.1))}〜${hm(pct(mins,.9))}`:'')+(oe?`<br>主に${esc(orgName(+oe[0]))}駅から混雑（${Math.round(oe[1]/mins.length*100)}%）`:'');
+  o.carsTxt=Object.entries(o.cars).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([c,n])=>`${c}号車(${n})`).join('・');
+  const top=Object.entries(o.cars).sort((a,b)=>b[1]-a[1])[0];o.note=oe&&top?noteFor(orgName(+oe[0]),o.d,+top[0]):''}
  if(byTime())list.sort((a,b)=>a.t-b.t);
- return '<h2>混雑区間ランキング</h2>'+list.map((o,i)=>item(i,esc(D.S[o.s])+(byCar?`　${o.car}号車`:''),o.when+(o.org?`<br>${esc(o.org)}`:''),`${IDX.lines[D.L[o.li]]} ${DIR[o.d]??''}`+(o.note?`<br>🚪 ${esc(o.note)}`:''),o.hit,o.all,mx,Math.max(min,6))).join('');
-}
+ return '<h2>混雑区間ランキング</h2>'+list.map((o,i)=>item(i,esc(D.S[o.s]),o.when,`${IDX.lines[D.L[o.li]]} ${DIR[o.d]??''}<br>混んだ号車：${o.carsTxt}`+(o.note?`<br>🚪 ${esc(o.note)}`:''),`${o.hit}回`,`${Math.round(o.hit/o.all*100)}%`,o.hit/mx,Math.max(min,6))).join('')}
 function renderTrain(min){
  const line=$('line').value,dt=$('dt').value,g={};
  for(const[no,car,d,hs]of D.trn){const m=D.tmeta[no];if(!m||!tgOK(isExp(m[1])))continue;
   if(line&&m[0]!==line)continue;if(dt!==''&&d!=dt)continue;if(!hrOK(m[4]))continue;
-  const k=no+'|'+car;const o=g[k]||(g[k]={no,car,hit:0,all:0});const[a,x]=tally(hs,min);o.all+=a;o.hit+=x}
- const list=Object.values(g).filter(o=>o.hit).sort((a,b)=>b.hit-a.hit||b.hit/b.all-a.hit/a.all).slice(0,60);
+  const o=g[no]||(g[no]={no,cars:{}});const[a,x]=tally(hs,min);const c=o.cars[car]||(o.cars[car]={hit:0,all:0});c.hit+=x;c.all+=a}
+ const list=Object.values(g).map(o=>{const cs=Object.entries(o.cars).filter(([,c])=>c.hit).sort((a,b)=>b[1].hit-a[1].hit);
+  return{...o,cs,hit:cs.length?cs[0][1].hit:0,all:cs.length?cs[0][1].all:1}}).filter(o=>o.hit).sort((a,b)=>b.hit-a.hit).slice(0,60);
  if(!list.length)return '<div class="empty">条件に合う混雑の記録はありません</div>';
- const L=Math.min(7,Math.max(4,min)),pb={};
- for(const p of D.pat){if(p[3]!==L||(dt!==''&&p[2]!=dt))continue;const k=p[0]+'|'+p[1];if(!pb[k]||p[4]>pb[k][4])pb[k]=p}
- const mx=list[0].hit;
- if(byTime())list.sort((a,b)=>(pb[a.no+'|'+a.car]?.[6]??D.tmeta[a.no][4]*60)-(pb[b.no+'|'+b.car]?.[6]??D.tmeta[b.no][4]*60));
- return '<h2>混雑列車ランキング（列車×号車）</h2>'+list.map((o,i)=>{const m=D.tmeta[o.no],p=pb[o.no+'|'+o.car];
-  return item(i,`${esc(o.no)} ${esc(m[1])} ${esc(m[2])}行　${o.car}号車`,p?`${hm(p[6])}〜${hm(p[7])}　${secPath(p[8],p[9])}`+(orgName(p[13]??-1)?`<br>${esc(orgName(p[13]))}駅から混雑`:''):'',
-   `${IDX.lines[m[0]]} ${DIR[m[3]]??''}`,o.hit,o.all,mx,Math.max(min,6))}).join('');
-}
-function renderHeat(rows,min){
- const lines=[...new Set(rows.map(r=>D.L[r[0]]))];
- if(!lines.length)return '<div class="empty">データがありません</div>';
- const hl=$('hline')?.value&&lines.includes($('hline').value)?$('hline').value:lines[0];
- const hd=$('hdir')?.value??'1',c={};let maxCar=0;const hours=new Set();
- for(const[li,d,s,car,h,dt,tg,hs]of rows){if(D.L[li]!==hl||String(d)!==hd)continue;
-  const k=h+'|'+car;const o=c[k]||(c[k]={hit:0,all:0});const[a,x]=tally(hs,min);o.all+=a;o.hit+=x;maxCar=Math.max(maxCar,car);hours.add(h)}
- const hs=[...hours].sort((a,b)=>a-b);
- let t='<div class="row2"><select id="hline">'+lines.map(l=>`<option value="${l}"${l===hl?' selected':''}>${IDX.lines[l]}</option>`).join('')+
-  `</select><select id="hdir"><option value="1"${hd==='1'?' selected':''}>下り</option><option value="0"${hd==='0'?' selected':''}>上り</option></select></div>`;
- if(!hs.length)return t+'<div class="empty">この路線・方向のデータがありません</div>';
- t+='<h2>時間帯×号車の混雑割合</h2><div class="heatwrap"><table class="heat"><tr><th></th>';
- for(let n=1;n<=maxCar;n++)t+=`<th>${n}号車</th>`;t+='</tr>';
- for(const h of hs){t+=`<tr><th>${h}時</th>`;for(let n=1;n<=maxCar;n++){const o=c[h+'|'+n];
-  if(!o||o.all<3){t+='<td style="color:var(--sub)">·</td>';continue}
-  const r=o.hit/o.all;t+=`<td style="background:rgba(61,63,160,${Math.min(1,r*1.4).toFixed(2)});color:${r>.4?'#fff':'var(--ink)'}">${Math.round(r*100)}</td>`}t+='</tr>'}
- return t+'</table></div>';
-}
+ const mx=list[0].hit,pm={};for(const o of mergedPats(min))if(!pm[o.no]||o.days>pm[o.no].days)pm[o.no]=o;
+ if(byTime())list.sort((a,b)=>(pm[a.no]?.s??D.tmeta[a.no][4]*60)-(pm[b.no]?.s??D.tmeta[b.no][4]*60));
+ return '<h2>混雑列車ランキング</h2>'+list.map((o,i)=>{const m=D.tmeta[o.no],p=pm[o.no];
+  return item(i,`${esc(o.no)} ${esc(m[1])} ${esc(m[2])}行`,p?`${hm(p.s)}〜${hm(p.e)}　${secPath(p.ss,p.es)}`+(orgName(p.org)?`<br>${esc(orgName(p.org))}駅から混雑`:''):'',
+   `${IDX.lines[m[0]]} ${DIR[m[3]]??''}<br>混んだ号車：${o.cs.slice(0,6).map(([c,v])=>`${c}号車(${v.hit}回)`).join('・')}`,`${o.hit}回`,`最多の号車 ${Math.round(o.hit/o.all*100)}%`,o.hit/mx,Math.max(min,6),o.no)}).join('')}
 function render(){
  if(!D)return;const rows=secRows(),min=+$('lv').value;
- renderDist(rows);$('split').disabled=view!=='sec';$('foot').textContent=FOOT[view];
- $('out').innerHTML=view==='pat'?renderPat(min):view==='sec'?renderSec(rows,min):view==='train'?renderTrain(min):renderHeat(rows,min);
- if(view==='heat'&&$('hline')){$('hline').onchange=render;$('hdir').onchange=render}
+ renderDist(rows);$('foot').textContent=FOOT[view];
+ $('out').innerHTML=view==='pat'?renderPat(min):view==='dur'?renderDur(min):view==='sec'?renderSec(rows,min):renderTrain(min);
+ $('out').querySelectorAll('[data-no]').forEach(el=>el.onclick=()=>showTrend(el.dataset.no,el.dataset.title));
 }
 document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{view=b.dataset.v;
  document.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed',x===b));render()});
-['line','dt','hr','lv','split','tg','order'].forEach(id=>$(id).onchange=render);
+['line','dt','hr','lv','tg','order'].forEach(id=>$(id).onchange=render);
 $('period').onchange=loadPeriod;
 init();
 </script></body></html>
