@@ -84,9 +84,9 @@ def snapshot(now):
             no = str(t.get("no", ""))
             cars = sorted((c for u in (monitor.get(no) or []) for c in (u.get("cars") or [])),
                           key=lambda c: c.get("carNo", 0))
-            if not cars:
-                continue
-            mon[no] = [[c.get("carNo"), c.get("congestion"), c.get("temp")] for c in cars]
+            if cars:
+                mon[no] = [[c.get("carNo"), c.get("congestion"), c.get("temp")] for c in cars]
+            # 混雑データのない列車も、時刻表づくりのため位置と時刻は記録する
             if (no, t.get("pos")) in seen:
                 continue
             seen.add((no, t.get("pos")))
@@ -164,12 +164,26 @@ def main():
         os.replace(old, f"{WORK}/raw/{ds}/all.csv.gz")
 
     state = {"key": None, "rows": [], "first": first}
+    recent = {}                                          # 列車ごとの直近1時間の記録（在線・統計のタップ表示用）
+
+    def write_recent(now):
+        cut = time.time() - 3600
+        for no in list(recent):
+            recent[no]["rows"] = [x for x in recent[no]["rows"] if x[0] >= cut]
+            if not recent[no]["rows"]:
+                del recent[no]
+        out = {"t": now.strftime("%Y-%m-%d %H:%M:%S"),
+               "trains": {no: {"typ": v["typ"], "dest": v["dest"], "rows": [x[1:] for x in v["rows"]]}
+                          for no, v in recent.items()}}
+        with open(f"{WORK}/recent.json", "w", encoding="utf-8") as f:
+            json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
     last, flushed, total = {}, time.time(), 0
 
     def save(now, force_flush=False):
         nonlocal flushed
         if state["key"] and (force_flush or time.time() - flushed >= FLUSH):
             write_hour(state["key"], state["rows"])
+            write_recent(now)
             flushed = time.time()
         git("add", "-A")
         if git("diff", "--cached", "--quiet", check=False).returncode != 0:
@@ -202,6 +216,9 @@ def main():
                         state["rows"].append(r)
                         last[r[2]] = (k, start)
                         total += 1
+                        if r[8]:
+                            recent.setdefault(r[2], {"typ": r[3], "dest": r[4], "rows": []})["rows"].append(
+                                [start, r[0], r[6], r[8]])
                 if data["lines"]:
                     with open(f"{WORK}/latest.json", "w", encoding="utf-8") as f:
                         json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
