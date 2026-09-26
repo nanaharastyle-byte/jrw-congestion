@@ -67,25 +67,40 @@
     }
     return out;
   }
+  // 日ごとの全走行区間。今日の分は、1時間ごとの集計のあとに走った区間を直近の記録（recent.json）から足す
   async function sources(no) {
-    const list = [];
+    const days = {};
+    let meta = {};
+    try {
+      const v = await (await fetch(`stats/trainlog/${encodeURIComponent(no)}.json`, { cache: 'no-store' })).json();
+      for (const [ds, d] of Object.entries(v.days || {})) days[ds] = { typ: d.typ, dest: d.dest, rows: d.rows.map(r => [r[0], r[1], r[2], r[3]]) };
+      meta = v;
+    } catch (e) { }
     try {
       const r = await (await fetch(RECENT + (gh ? '' : '?t=' + Date.now()), { cache: 'no-store' })).json();
       const v = r.trains && r.trains[no];
-      if (v && v.rows.length) list.push({ label: `直近1時間（${r.t.slice(11, 16)}時点）`, typ: v.typ, dest: v.dest,
-        rows: bySection(v.rows.map(x => [x[0], x[1], String(x[2]).split(';').map(c => c.split(':').map(Number)), x[3]])) });
-    } catch (e) { }
-    try {
-      const v = await (await fetch(`stats/trainlog/${encodeURIComponent(no)}.json`, { cache: 'no-store' })).json();
-      for (const ds of Object.keys(v.days || {}).sort().reverse()) {
-        const d = v.days[ds], dd = new Date(ds + 'T12:00:00+09:00');
-        const mx = Math.max(-1, ...d.rows.flatMap(r => r[3].map(c => c[1])));
-        const dl = Math.max(0, ...d.rows.map(r => r[2] || 0));
-        list.push({ label: `${dd.getMonth() + 1}/${dd.getDate()}(${WD[dd.getDay()]})　最大${mx}%${dl ? `・遅れ最大${dl}分` : ''}`,
-          typ: d.typ, dest: d.dest, rows: d.rows.map(r => [r[0], r[1], r[2], r[3]]) });
+      if (v && v.rows.length) {
+        const ds = r.t.slice(0, 10), add = bySection(v.rows.map(x => [x[0], x[1], String(x[2]).split(';').map(c => c.split(':').map(Number)), x[3]]));
+        const d = days[ds] || (days[ds] = { typ: v.typ, dest: v.dest, rows: [] });
+        const last = d.rows.length ? d.rows[d.rows.length - 1][0] : '';
+        for (const row of add) {
+          const lr = d.rows[d.rows.length - 1];
+          if (lr && lr[1] === row[1]) {                       // 同じ区間の続きなら最大値でまとめる
+            lr[2] = Math.max(lr[2], row[2]); const m = Object.fromEntries(lr[3]);
+            for (const [c, p] of row[3]) m[c] = Math.max(m[c] ?? -1, p);
+            lr[3] = Object.entries(m).map(([c, p]) => [+c, p]);
+          } else if (row[0] >= last) d.rows.push(row);
+        }
+        d.live = r.t.slice(11, 16);
       }
     } catch (e) { }
-    return list;
+    return Object.keys(days).sort().reverse().map(ds => {
+      const d = days[ds], dd = new Date(ds + 'T12:00:00+09:00');
+      const mx = Math.max(-1, ...d.rows.flatMap(r => r[3].map(c => c[1])));
+      const dl = Math.max(0, ...d.rows.map(r => r[2] || 0));
+      return { label: `${dd.getMonth() + 1}/${dd.getDate()}(${WD[dd.getDay()]})　最大${mx}%${dl ? `・遅れ最大${dl}分` : ''}${d.live ? `（${d.live}まで）` : ''}`,
+        typ: d.typ, dest: d.dest, rows: d.rows };
+    });
   }
   function table(src, T, no) {
     const rows = fillGaps(src.rows);
