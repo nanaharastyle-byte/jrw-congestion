@@ -1,1 +1,1 @@
-{"last": "2026-09-27 00:46", "trainsWithData": 2, "monitorTrains": 10, "errors": [], "weatherTime": "00:40", "weatherPoints": {"琵琶湖線": ["彦根", "大津"], "JR京都線": ["京都", "大阪"], "奈良線": ["京都", "京田辺"], "嵯峨野線": ["京都", "園部"]}, "trafficNow": {"kinokuni": {"status": "遅延", "cause": "動物と接触"}}}
+{"last": "2026-09-27 00:55", "trainsWithData": 1, "monitorTrains": 6, "errors": [], "weatherTime": "00:40", "weatherPoints": {"琵琶湖線": ["彦根", "大津"], "JR京都線": ["京都", "大阪"], "奈良線": ["京都", "京田辺"], "嵯峨野線": ["京都", "園部"]}, "trafficNow": {}}
