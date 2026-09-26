@@ -1,30 +1,36 @@
 {
- "263C": [
+ "600": [
   {
    "cars": [
     {
-     "carNo": 1,
+     "carNo": 12,
      "status": 1,
-     "congestion": 38,
-     "temp": 23,
+     "congestion": -1,
+     "temp": -1,
      "facilities": [],
      "types": []
     },
     {
-     "carNo": 2,
+     "carNo": 11,
      "status": 1,
-     "congestion": 39,
-     "temp": 22,
+     "congestion": -1,
+     "temp": -1,
      "facilities": [],
-     "types": [
-      3
-     ]
+     "types": []
     },
     {
-     "carNo": 3,
+     "carNo": 10,
      "status": 1,
-     "congestion": 38,
-     "temp": 22,
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 9,
+     "status": 1,
+     "congestion": -1,
+     "temp": -1,
      "facilities": [],
      "types": []
     }
@@ -33,39 +39,75 @@
   {
    "cars": [
     {
-     "carNo": 4,
+     "carNo": 8,
      "status": 1,
-     "congestion": 25,
+     "congestion": 0,
      "temp": 23,
      "facilities": [],
      "types": []
     },
     {
-     "carNo": 5,
+     "carNo": 7,
      "status": 1,
-     "congestion": 11,
-     "temp": 23,
-     "facilities": [],
-     "types": [
-      4
-     ]
-    },
-    {
-     "carNo": 6,
-     "status": 1,
-     "congestion": 19,
-     "temp": 23,
+     "congestion": 1,
+     "temp": 22,
      "facilities": [],
      "types": [
       3
      ]
     },
     {
-     "carNo": 7,
+     "carNo": 6,
      "status": 1,
-     "congestion": 21,
+     "congestion": 1,
      "temp": 24,
      "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 5,
+     "status": 1,
+     "congestion": 0,
+     "temp": 24,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 4,
+     "status": 1,
+     "congestion": 2,
+     "temp": 23,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 3,
+     "status": 1,
+     "congestion": 3,
+     "temp": 24,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 2,
+     "status": 1,
+     "congestion": 4,
+     "temp": 24,
+     "facilities": [],
+     "types": [
+      3
+     ]
+    },
+    {
+     "carNo": 1,
+     "status": 1,
+     "congestion": 0,
+     "temp": 23,
+     "facilities": [
+      1,
+      2,
+      4
+     ],
      "types": []
     }
    ]
