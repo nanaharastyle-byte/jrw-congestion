@@ -832,7 +832,24 @@ def trainlogs(dates, keep=14):
 
 
 # ================= 出力 =================
+def ensure_db():
+    """30秒ごとの記録（liveブランチ）がまだ取り出されていなければ、ここで取り出す"""
+    if glob.glob(f"{DB_RAW}/*/*.csv.gz") or glob.glob(f"{DB_RAW}/*.csv.gz"):
+        return
+    import subprocess
+    root = os.path.dirname(os.path.dirname(DB_RAW.rstrip("/"))) or "/tmp/db"
+    try:
+        subprocess.run(["git", "fetch", "-q", "--depth=1", "origin", "live"], check=True, capture_output=True, timeout=300)
+        os.makedirs(os.path.dirname(DB_RAW.rstrip("/")), exist_ok=True)
+        arc = subprocess.run(["git", "archive", "FETCH_HEAD", "raw"], check=True, capture_output=True, timeout=300)
+        subprocess.run(["tar", "-x", "-C", os.path.dirname(DB_RAW.rstrip("/"))], input=arc.stdout, check=True, timeout=300)
+        print("30秒ごとの記録を取り出しました:", len(glob.glob(f"{DB_RAW}/*/*.csv.gz")), "ファイル")
+    except Exception as e:
+        print("30秒ごとの記録を取り出せませんでした:", e)
+
+
 def report(now):
+    ensure_db()
     today = now.date()
     dates = all_dates()
     by_period = defaultdict(list)
