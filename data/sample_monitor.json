@@ -60,7 +60,7 @@
      "carNo": 6,
      "status": 1,
      "congestion": 0,
-     "temp": 24,
+     "temp": 23,
      "facilities": [],
      "types": []
     },
@@ -92,7 +92,7 @@
      "carNo": 2,
      "status": 1,
      "congestion": 0,
-     "temp": 25,
+     "temp": 24,
      "facilities": [],
      "types": [
       3
