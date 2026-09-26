@@ -13,7 +13,7 @@ concurrency:
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     outputs:
       publish: ${{ steps.c.outputs.publish }}
     steps:
@@ -26,6 +26,12 @@ jobs:
         run: python congestion.py collect
         env:
           FORCE: ${{ github.event_name == 'workflow_dispatch' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 30秒ごとの記録を取り出す
+        if: steps.c.outputs.publish == 'true'
+        run: |
+          mkdir -p /tmp/db
+          (git fetch -q --depth=1 origin live && git archive FETCH_HEAD raw | tar -x -C /tmp/db) || echo "30秒ごとの記録はまだありません"
       - name: report (1時間に1回)
         if: steps.c.outputs.publish == 'true'
         run: python congestion.py report
