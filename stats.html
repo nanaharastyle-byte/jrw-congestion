@@ -61,6 +61,7 @@ td{padding:4px;border-bottom:1px solid var(--rule);white-space:nowrap}
   <select id="hr" aria-label="時間帯"><option value="">全時間帯</option><option value="5-9">朝 5〜9時台</option><option value="10-15">昼 10〜15時台</option><option value="16-19">夕 16〜19時台</option><option value="20-24">夜 20時台以降</option></select>
   <select id="lv" aria-label="混雑レベル"><option value="6">大変多く以上</option><option value="7">とても混雑のみ</option><option value="5">多く以上</option><option value="4">吊り革以上</option></select>
   <select id="tg" aria-label="種別"><option value="0" selected>特急を除く</option><option value="">特急を含む</option><option value="1">特急のみ</option></select>
+  <select id="dir" aria-label="方向"><option value="">上り・下り</option><option value="0">上りのみ</option><option value="1">下りのみ</option></select>
   <select id="order" aria-label="並び順"><option value="count">並び＝回数順</option><option value="time">並び＝時刻順</option></select>
  </div>
  <div class="seg" role="group" aria-label="表示">
@@ -87,6 +88,7 @@ const pct=(a,q)=>{const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,M
 const isExp=typ=>String(typ).includes('特急')?1:0;
 const byTime=()=>$('order').value==='time';
 function tgOK(v){const t=$('tg').value;return t===''||+t===v}
+function dirOK(d){const v=$('dir').value;return v===''||String(d)===v}
 let IDX=null,D=null,view='pat',NOTES=[];
 function noteFor(st,d,car){if(!st)return'';st=String(st).replace(/駅$/,'');
  const n=NOTES.find(x=>x.station===st&&(x.dir==='両方'||x.dir===DIR[d])&&(x.cars||[]).includes(car));
@@ -125,7 +127,7 @@ async function loadPeriod(){
 }
 function hrOK(h){const v=$('hr').value;if(!v)return true;const[a,b]=v.split('-').map(Number);return h>=a&&h<=b}
 function secRows(){const line=$('line').value,dt=$('dt').value;
- return D.sec.filter(r=>(!line||D.L[r[0]]===line)&&(dt===''||r[5]==dt)&&hrOK(r[4])&&tgOK(r[6]))}
+ return D.sec.filter(r=>(!line||D.L[r[0]]===line)&&(dt===''||r[5]==dt)&&hrOK(r[4])&&tgOK(r[6])&&dirOK(r[1]))}
 function tally(h,min,c){let all=0,hit=0;for(let i=0;i<h.length;i+=2){const l=lvOf(h[i]),v=h[i+1];all+=v;if(l>=min)hit+=v;if(c)c[l]+=v}return[all,hit]}
 function renderDist(rows){
  const c=Array(8).fill(0);let n=0;for(const r of rows)n+=tally(r[7],8,c)[0];
@@ -141,7 +143,7 @@ function secPath(a,b){a=D.S[a];b=D.S[b];return a===b?esc(a):esc(a)+' → '+esc(b
 // 同じ列車・同じ時間帯の混雑パターンを1つにまとめる（号車を並べて表示）
 function mergedPats(min){
  const L=Math.min(7,Math.max(4,min)),line=$('line').value,dt=$('dt').value,g={};
- for(const p of D.pat){const m=D.tmeta[p[0]];if(p[3]!==L||!m||!tgOK(isExp(m[1]))||(line&&m[0]!==line)||(dt!==''&&p[2]!=dt))continue;
+ for(const p of D.pat){const m=D.tmeta[p[0]];if(p[3]!==L||!m||!tgOK(isExp(m[1]))||!dirOK(m[3])||(line&&m[0]!==line)||(dt!==''&&p[2]!=dt))continue;
   (g[p[0]+'|'+p[2]]||(g[p[0]+'|'+p[2]]=[])).push(p)}
  const out=[];
  for(const lst of Object.values(g)){lst.sort((a,b)=>a[6]-b[6]);const cl=[];
@@ -189,7 +191,7 @@ function renderSec(rows,min){
  return '<h2>混雑区間ランキング</h2>'+list.map((o,i)=>item(i,esc(D.S[o.s]),o.when,`${IDX.lines[D.L[o.li]]} ${DIR[o.d]??''}<br>混んだ号車：${o.carsTxt}`+(o.note?`<br>🚪 ${esc(o.note)}`:''),`${o.hit}回`,`${Math.round(o.hit/o.all*100)}%`,o.hit/mx,Math.max(min,6))).join('')}
 function renderTrain(min){
  const line=$('line').value,dt=$('dt').value,g={};
- for(const[no,car,d,hs]of D.trn){const m=D.tmeta[no];if(!m||!tgOK(isExp(m[1])))continue;
+ for(const[no,car,d,hs]of D.trn){const m=D.tmeta[no];if(!m||!tgOK(isExp(m[1]))||!dirOK(m[3]))continue;
   if(line&&m[0]!==line)continue;if(dt!==''&&d!=dt)continue;if(!hrOK(m[4]))continue;
   const o=g[no]||(g[no]={no,cars:{}});const[a,x]=tally(hs,min);const c=o.cars[car]||(o.cars[car]={hit:0,all:0});c.hit+=x;c.all+=a}
  const list=Object.values(g).map(o=>{const cs=Object.entries(o.cars).filter(([,c])=>c.hit).sort((a,b)=>b[1].hit-a[1].hit);
@@ -208,7 +210,7 @@ function render(){
 }
 document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{view=b.dataset.v;
  document.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed',x===b));render()});
-['line','dt','hr','lv','tg','order'].forEach(id=>$(id).onchange=render);
+['line','dt','hr','lv','tg','dir','order'].forEach(id=>$(id).onchange=render);
 $('period').onchange=loadPeriod;
 init();
 </script></body></html>
