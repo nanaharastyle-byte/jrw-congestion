@@ -49,7 +49,7 @@
     {
      "carNo": 7,
      "status": 1,
-     "congestion": 1,
+     "congestion": 2,
      "temp": 22,
      "facilities": [],
      "types": [
@@ -92,7 +92,7 @@
      "carNo": 2,
      "status": 1,
      "congestion": 4,
-     "temp": 24,
+     "temp": 25,
      "facilities": [],
      "types": [
       3
