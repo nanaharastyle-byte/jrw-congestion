@@ -1,53 +1,37 @@
 {
- "1060M": [
+ "1235C": [
   {
    "cars": [
     {
      "carNo": 1,
      "status": 1,
-     "congestion": -1,
-     "temp": -1,
-     "facilities": [],
+     "congestion": 8,
+     "temp": 22,
+     "facilities": [
+      1,
+      2
+     ],
      "types": []
     },
     {
      "carNo": 2,
      "status": 1,
-     "congestion": -1,
-     "temp": -1,
+     "congestion": 0,
+     "temp": 21,
      "facilities": [],
-     "types": []
+     "types": [
+      3
+     ]
     },
     {
      "carNo": 3,
      "status": 1,
-     "congestion": -1,
-     "temp": -1,
-     "facilities": [],
-     "types": []
-    },
-    {
-     "carNo": 4,
-     "status": 1,
-     "congestion": -1,
-     "temp": -1,
-     "facilities": [],
-     "types": []
-    },
-    {
-     "carNo": 5,
-     "status": 1,
-     "congestion": -1,
-     "temp": -1,
-     "facilities": [],
-     "types": []
-    },
-    {
-     "carNo": 6,
-     "status": 1,
-     "congestion": -1,
-     "temp": -1,
-     "facilities": [],
+     "congestion": 15,
+     "temp": 22,
+     "facilities": [
+      1,
+      2
+     ],
      "types": []
     }
    ]
@@ -55,37 +39,44 @@
   {
    "cars": [
     {
+     "carNo": 4,
+     "status": 1,
+     "congestion": 23,
+     "temp": 22,
+     "facilities": [
+      1,
+      2
+     ],
+     "types": []
+    },
+    {
+     "carNo": 5,
+     "status": 1,
+     "congestion": 0,
+     "temp": 22,
+     "facilities": [],
+     "types": [
+      4
+     ]
+    },
+    {
+     "carNo": 6,
+     "status": 1,
+     "congestion": 2,
+     "temp": 22,
+     "facilities": [],
+     "types": [
+      3
+     ]
+    },
+    {
      "carNo": 7,
      "status": 1,
-     "congestion": 39,
-     "temp": 23,
+     "congestion": 19,
+     "temp": 22,
      "facilities": [
-      3,
-      4,
-      5
-     ],
-     "types": []
-    },
-    {
-     "carNo": 8,
-     "status": 1,
-     "congestion": 28,
-     "temp": 24,
-     "facilities": [
-      3,
-      4,
-      5
-     ],
-     "types": []
-    },
-    {
-     "carNo": 9,
-     "status": 1,
-     "congestion": 14,
-     "temp": 24,
-     "facilities": [
-      3,
-      5
+      1,
+      2
      ],
      "types": []
     }
