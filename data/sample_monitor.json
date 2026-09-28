@@ -1,46 +1,39 @@
 {
- "100C": [
+ "1003M": [
   {
    "cars": [
     {
-     "carNo": 7,
+     "carNo": 9,
      "status": 1,
-     "congestion": 48,
-     "temp": 21,
+     "congestion": 10,
+     "temp": 22,
      "facilities": [
-      1,
-      2
+      3,
+      5
      ],
      "types": []
     },
     {
-     "carNo": 6,
+     "carNo": 8,
      "status": 1,
-     "congestion": 42,
-     "temp": 22,
-     "facilities": [],
-     "types": [
-      3
-     ]
-    },
-    {
-     "carNo": 5,
-     "status": 1,
-     "congestion": 37,
-     "temp": 22,
-     "facilities": [],
-     "types": [
-      4
-     ]
-    },
-    {
-     "carNo": 4,
-     "status": 1,
-     "congestion": 72,
+     "congestion": 0,
      "temp": 22,
      "facilities": [
-      1,
-      2
+      3,
+      4,
+      5
+     ],
+     "types": []
+    },
+    {
+     "carNo": 7,
+     "status": 1,
+     "congestion": 21,
+     "temp": 22,
+     "facilities": [
+      3,
+      4,
+      5
      ],
      "types": []
     }
@@ -49,35 +42,51 @@
   {
    "cars": [
     {
+     "carNo": 6,
+     "status": 1,
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 5,
+     "status": 1,
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 4,
+     "status": 1,
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
+     "types": []
+    },
+    {
      "carNo": 3,
      "status": 1,
-     "congestion": 76,
-     "temp": 22,
-     "facilities": [
-      1,
-      2
-     ],
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
      "types": []
     },
     {
      "carNo": 2,
      "status": 1,
-     "congestion": 64,
-     "temp": 22,
+     "congestion": -1,
+     "temp": -1,
      "facilities": [],
-     "types": [
-      3
-     ]
+     "types": []
     },
     {
      "carNo": 1,
      "status": 1,
-     "congestion": 100,
-     "temp": 22,
-     "facilities": [
-      1,
-      2
-     ],
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
      "types": []
     }
    ]
