@@ -40,9 +40,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
           git add -A data
+          git rm -r -q --ignore-unmatch docs          # 古い docs フォルダは削除として保存
           git commit -q -m "collect $(TZ=Asia/Tokyo date +%F_%H%M)" || exit 0
-          git pull -q --rebase || true
-          git push -q
+          git stash -q || true                        # 保存対象外の変更は取り込みの邪魔にならないよう退避
+          for i in 1 2 3; do                          # 途中で他の変更が入っても、取り込んでから再挑戦
+            git pull -q --rebase && git push -q && exit 0
+            sleep 5
+          done
+          exit 1
       - if: steps.c.outputs.publish == 'true'
         uses: actions/upload-pages-artifact@v4
         with:
