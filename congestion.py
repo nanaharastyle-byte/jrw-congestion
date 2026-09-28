@@ -763,7 +763,7 @@ def predict(dates, now):
 
 # ================= 巡回ルート用の観測ダイヤ =================
 def patrol(dates):
-    """列車ごとに、駅の時刻（複数日の中央値）と区間ごとの混雑率を作る"""
+    """列車ごとに、駅の時刻（複数日の中央値）と、区間ごとの混雑の見込みを作る"""
     L = list(LINES)
     S, idx = [], {}
 
@@ -777,44 +777,92 @@ def patrol(dates):
     for ds in dates:
         dty = day_type(dt.date.fromisoformat(ds))
         raw, _ = load_day(ds)
-        for tm, mi, line, no, typ, dest, dr, secn, delay, cars in passages(raw):
+        for tm, mi, line, no, typ, dest, dr, secn, delay, cars in raw:
             tr = data.setdefault((dty, no), {"days": set(), "meta": (typ, dest, dr), "sec": {}})
             tr["days"].add(ds)
-            x = tr["sec"].setdefault(secn, {"mins": [], "days": set(), "h6": Counter(), "h7": Counter(), "line": Counter()})
-            if ds in x["days"]:
-                continue
-            x["days"].add(ds)
-            x["mins"].append(mi)
-            x["line"][line] += 1
-            for car, p in cars:
-                lv = lv_of(p)
-                if lv >= 6:
-                    x["h6"][car] += 1
-                if lv >= 7:
-                    x["h7"][car] += 1
+            x = tr["sec"].setdefault(norm(secn), {"first": {}, "line": Counter(), "cars": defaultdict(dict)})
+            if ds not in x["first"]:
+                x["first"][ds] = mi                       # その日にその駅・区間に最初にいた時刻
+                x["line"][line] += 1
+            for car, p in cars:                           # 同じ駅・区間にいる間の号車ごとの最大値
+                x["cars"][ds][car] = max(x["cars"][ds].get(car, -1), p)
     trains = [[], []]
     for (dty, no), tr in data.items():
         if len(tr["days"]) < 2:
-            continue                               # 2日以上走っている定期列車だけ
+            continue                                      # 2日以上走っている定期列車だけ
+        typ = tr["meta"][0]
         stops, crowd = [], []
         for secn, x in tr["sec"].items():
-            n = len(x["days"])
-            med = int(statistics.median(x["mins"]))
-            li = L.index(x["line"].most_common(1)[0][0]) if x["line"] else 0
-            c6, c7 = x["h6"].most_common(1), x["h7"].most_common(1)
+            n = len(x["first"])
+            med = int(statistics.median(x["first"].values()))
+            li = L.index(x["line"].most_common(1)[0][0])
+            day_max = [(max(c.values()), max(c, key=c.get)) for c in x["cars"].values() if c]
+            h6, h7 = Counter(), Counter()
+            for c in x["cars"].values():
+                for car, p in c.items():
+                    h6[car] += lv_of(p) >= 6
+                    h7[car] += lv_of(p) >= 7
+            c6, c7 = h6.most_common(1), h7.most_common(1)
+            exp = int(statistics.median(m for m, _ in day_max)) if day_max else -1       # 期待できる最大混雑率（中央値）
+            exp_car = Counter(c for _, c in day_max).most_common(1)[0][0] if day_max else 0
+            car_med = []
+            if exp >= 80:                                                                 # 混む区間だけ号車ごとの中央値を持つ
+                per = defaultdict(list)
+                for c in x["cars"].values():
+                    for car, p in c.items():
+                        per[car].append(p)
+                car_med = [[car, int(statistics.median(v))] for car, v in sorted(per.items())]
             crowd.append([med, round(c6[0][1] / n, 2) if c6 else 0, round(c7[0][1] / n, 2) if c7 else 0,
-                          c6[0][0] if c6 else 0, c7[0][0] if c7 else 0, n, li])
+                          c6[0][0] if c6 else 0, c7[0][0] if c7 else 0, n, li, exp, exp_car, car_med])
             if secn.endswith("駅"):
-                ok = stop_ok(tr["meta"][0], L[li], secn[:-1])    # 停車駅一覧で判定。わからない種別は2日以上の観測で推定
+                ok = stop_ok(typ, L[li], secn[:-1])    # 停車駅一覧で判定。わからない種別は2日以上の観測で推定
                 if ok or (ok is None and n >= 2):
-                    stops.append([si(norm(secn[:-1])), med, n, li])
+                    stops.append([si(secn[:-1]), med, n, li])
+        stops = fill_stops(stops, typ, S, si)
         if len(stops) < 2:
             continue
         stops.sort(key=lambda s: s[1])
-        crowd.sort()
+        crowd.sort(key=lambda c: c[0])
         trains[dty].append([no, *tr["meta"], len(tr["days"]), stops, crowd])
     return {"S": S, "L": L, "days": len(dates), "from": dates[0] if dates else "", "trains": trains,
             "stations": {k: [n for _, n in v] for k, v in LINE_STATIONS.items()}}
+
+
+def fill_stops(stops, typ, S, si):
+    """停車駅一覧にあるのに記録がない駅（嵯峨野線・奈良線の京都駅など、JR側で表示されない駅）の時刻を、
+    前後の駅の時刻から推定して補う。推定した駅は観測日数0として印を付ける"""
+    L = list(LINES)
+    have = {S[s[0]] for s in stops}
+    add = []
+    for li, line in enumerate(L):
+        pat = STOP_PATTERNS.get(line, {}).get(type_key(typ) or "")
+        if not pat:
+            continue
+        order = [n for _, n in LINE_STATIONS[line]]
+        obs = sorted((order.index(S[s[0]]), s[1]) for s in stops if s[3] == li and S[s[0]] in order)
+        if len(obs) < 2:
+            continue
+        lo, hi = obs[0][0], obs[-1][0]
+        # 京都側の終点（嵯峨野線・奈良線）は、京都駅の手前2駅以内まで記録があれば京都まで延ばす
+        if line in ("sagano", "nara") and lo <= 2:
+            lo = 0
+        for k in range(lo, hi + 1):
+            name = order[k]
+            if name in have or name not in pat:
+                continue
+            below = [o for o in obs if o[0] < k]
+            above = [o for o in obs if o[0] > k]
+            if below and above:
+                (i1, t1), (i2, t2) = below[-1], above[0]
+            else:
+                (i1, t1), (i2, t2) = (obs[0], obs[1]) if not below else (obs[-2], obs[-1])
+            step = (t2 - t1) / (i2 - i1) if i2 != i1 else 2
+            if abs(step) < 1.5:
+                step = 1.5 if step >= 0 else -1.5          # 1駅あたり最低1.5分
+            t = int(round(t1 + (k - i1) * step))
+            add.append([si(name), t, 0, li])
+            have.add(name)
+    return stops + add
 
 
 # ================= 時刻表（実測）・走行記録 =================
