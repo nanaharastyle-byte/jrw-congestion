@@ -1,5 +1,5 @@
 {
- "1026M": [
+ "1024M": [
   {
    "cars": [
     {
@@ -69,8 +69,8 @@
     {
      "carNo": 8,
      "status": 1,
-     "congestion": 107,
-     "temp": 25,
+     "congestion": 93,
+     "temp": 24,
      "facilities": [
       3,
       4,
@@ -81,10 +81,9 @@
     {
      "carNo": 9,
      "status": 1,
-     "congestion": 94,
+     "congestion": 88,
      "temp": 24,
      "facilities": [
-      1,
       3,
       5
      ],
