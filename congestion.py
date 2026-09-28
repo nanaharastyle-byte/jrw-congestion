@@ -31,7 +31,7 @@ from zoneinfo import ZoneInfo
 JST = ZoneInfo("Asia/Tokyo")
 WEST = "https://www.train-guide.westjr.co.jp/api/v3/"
 JMA = "https://www.jma.go.jp/bosai/"
-LINES = {"hokurikubiwako": "琵琶湖線", "kyoto": "JR京都線", "nara": "奈良線", "sagano": "嵯峨野線"}
+LINES = {"hokurikubiwako": "琵琶湖線", "kyoto": "JR京都線", "nara": "奈良線", "sagano": "嵯峨野線", "kosei": "湖西線"}
 
 # 乗車率(%)→7段階の暫定基準（公式アイコンとずれていればここを直す。各ページもこの値を使います）
 T = [40, 60, 80, 100, 130, 160]
@@ -43,10 +43,12 @@ WX_POINTS = {
     "kyoto": [("61", "京都"), ("62", "大阪")],
     "nara": [("61", "京都"), ("61", "京田辺")],
     "sagano": [("61", "京都"), ("61", "亀岡"), ("61", "園部")],
+    "kosei": [("60", "大津"), ("60", "南小松"), ("60", "今津")],
 }
 # 降水確率に使う予報区（府県予報区コード, 一次細分区域コード）
 FORECAST_AREAS = {"hokurikubiwako": ("250000", "250010"), "kyoto": ("260000", "260010"),
-                  "nara": ("260000", "260010"), "sagano": ("260000", "260010")}
+                  "nara": ("260000", "260010"), "sagano": ("260000", "260010"),
+                  "kosei": ("250000", "250010")}
 
 # 路線ごとの駅（駅ナンバリング, 駅名）。統計・在線・時刻表の路線の振り分けに使う
 LINE_STATIONS = {
@@ -68,6 +70,11 @@ LINE_STATIONS = {
              ("JR-D11", "新田"), ("JR-D12", "城陽"), ("JR-D13", "長池"), ("JR-D14", "山城青谷"), ("JR-D15", "山城多賀"),
              ("JR-D16", "玉水"), ("JR-D17", "棚倉"), ("JR-D18", "上狛"), ("JR-D19", "木津"), ("JR-D21", "平城山"),
              ("JR-D22", "奈良")],
+    "kosei": [("JR-A31", "京都"), ("JR-B31", "山科"), ("JR-B30", "大津京"), ("JR-B29", "唐崎"), ("JR-B28", "比叡山坂本"),
+              ("JR-B27", "おごと温泉"), ("JR-B26", "堅田"), ("JR-B25", "小野"), ("JR-B24", "和邇"), ("JR-B23", "蓬莱"),
+              ("JR-B22", "志賀"), ("JR-B21", "比良"), ("JR-B20", "近江舞子"), ("JR-B19", "北小松"), ("JR-B18", "近江高島"),
+              ("JR-B17", "安曇川"), ("JR-B16", "新旭"), ("JR-B15", "近江今津"), ("JR-B14", "近江中庄"), ("JR-B13", "マキノ"),
+              ("JR-B12", "永原"), ("JR-B11", "近江塩津")],
 }
 _LSET = {k: {n for _, n in v} for k, v in LINE_STATIONS.items()}
 
@@ -105,7 +112,9 @@ def stop_ok(typ, line, station):
     return None if lst is None else norm(station) in lst
 # 運行情報（遅延の原因）の路線キー候補
 TRAFFIC_KEYS = {"hokurikubiwako": ["biwako", "hokurikubiwako", "hokuriku"], "kyoto": ["kyoto"],
-                "nara": ["nara"], "sagano": ["sagano", "sanin1", "sanin"]}
+                "nara": ["nara"], "sagano": ["sagano", "sanin1", "sanin"], "kosei": ["kosei"]}
+# 路線名の別名（JRのデータ内の乗換コードなど）→ このプログラムの路線名
+LINE_ALIAS = {"biwako": "hokurikubiwako", "hokuriku": "hokurikubiwako", "sanin1": "sagano"}
 DAILY_KEEP = 35          # 日別の統計を残す日数
 
 
