@@ -74,7 +74,8 @@ label.f{font-size:12px;color:var(--sub);display:block}
   <div><label class="f" for="t1">到着（まで）</label><input type="time" id="t1" value="09:00"></div>
   <div><label class="f" for="lv">対象の混雑</label><select id="lv"><option value="6">大変多く以上</option><option value="7">とても混雑</option></select></div>
   <div><label class="f" for="xf">乗り換えの余裕</label><select id="xf"><option value="1">1分</option><option value="2" selected>2分</option><option value="3">3分</option></select></div>
-  <div><label class="f" for="xs">乗り換えの考え方</label><select id="xs"><option value="both">両方を表示</option><option value="few">乗り換え少なめ</option><option value="short">短い往復もOK</option></select></div>
+  <div><label class="f" for="ev">ルートの選び方</label><select id="ev"><option value="all">3つとも表示</option><option value="peak">最大混雑率を優先</option><option value="time">混雑時間を優先</option><option value="sec">混雑区間の多さを優先</option></select></div>
+  <div><label class="f" for="xs">乗り換えの考え方</label><select id="xs"><option value="few">乗り換え少なめ</option><option value="short">短い往復もOK</option><option value="both">両方を表示</option></select></div>
   <div><label class="f" for="tg">種別</label><select id="tg"><option value="0" selected>特急を除く</option><option value="">特急を含む</option></select></div>
  </div>
  <div class="stsel">
@@ -89,7 +90,7 @@ label.f{font-size:12px;color:var(--sub);display:block}
  <div id="out"></div>
  <div id="incidents"></div>
  <div id="schools"></div>
- <p class="note">・ダイヤは公式時刻表ではなく、過去の記録で各列車が各駅にいた時刻の中央値（実測ダイヤ）です。数分ずれることがあるため、実際の巡回前に公式時刻表で確認してください。<br>・乗り降りできる駅は、種別ごとの停車駅一覧で判定しています（一覧にない種別は記録から推定）。<br>・「混雑区間の多さ」は混雑する区間の数、「混雑時間の長さ」は混雑した状態で乗っている時間（分）で評価します。<br>・時刻をタップすると、その列車の過去の混雑記録（日付ごと・号車ごと）を表示します。<br>・性別・年齢の構成はデータがないため考慮していません（混雑度のみで判定）。</p>
+ <p class="note">・ダイヤは公式時刻表ではなく、過去の記録で各列車が各駅にいた時刻の中央値（実測ダイヤ）です。数分ずれることがあるため、実際の巡回前に公式時刻表で確認してください。<br>・乗り降りできる駅は、種別ごとの停車駅一覧で判定しています（一覧にない種別は記録から推定）。<br>・「最大混雑率」はその区間で期待できる最大の乗車率（過去の記録の中央値）、「混雑時間」は混雑した状態で乗っている時間（分）、「混雑区間の多さ」は混雑する区間の数で評価します。<br>・嵯峨野線・奈良線の京都駅のように、JRのデータに表示されない停車駅の時刻は、前後の駅から推定しています（「推定」と表示）。<br>・時刻をタップすると、その列車の過去の混雑記録（日付ごと・号車ごと）を表示します。<br>・性別・年齢の構成はデータがないため考慮していません（混雑度のみで判定）。</p>
 </main>
 <script src="trend.js"></script>
 <script>
@@ -172,12 +173,16 @@ function context(){
  trs.forEach((tr,ti)=>tr[5].forEach((s,i)=>{if(lines.has(P.L[s[3]]))(at[s[0]]||(at[s[0]]=[])).push({ti,i,t:s[1]})}));
  return{trs,at,lines,L,xf,idx}}
 // 区間ごとの混雑確率を合計。mode=time のときは、その区間に乗っている分数で重み付けする
+const TH={6:130,7:160};   // 大変多く以上＝130%〜、とても混雑＝160%〜（暫定基準）
 function legScore(ctx,tr,a,b,mode){
- const cr=tr[6];let sc=0,secs=0,mins=0,peak=0,cars={};
+ const cr=tr[6];let secs=0,mins=0,peak=0,cars={},exp=-1,expCar=0,expSec=null,hot=new Set();
  for(let i=0;i<cr.length;i++){const c=cr[i];if(c[0]<a||c[0]>b)continue;
   const p=ctx.L===7?c[2]:c[1],car=ctx.L===7?c[4]:c[3],w=Math.min(5,Math.max(1,((cr[i+1]?.[0])??c[0]+2)-c[0]));
-  secs+=p;mins+=p*w;peak=Math.max(peak,p);if(car)cars[car]=(cars[car]||0)+p}
- return{sc:mode==='time'?mins:secs,secs,mins,peak,car:Object.entries(cars).sort((x,y)=>y[1]-x[1])[0]?.[0]}}
+  secs+=p;mins+=p*w;peak=Math.max(peak,p);if(car)cars[car]=(cars[car]||0)+p;
+  if((c[7]??-1)>exp){exp=c[7];expCar=c[8];expSec=c}
+  for(const[cn,m]of c[9]||[])if(m>=TH[ctx.L])hot.add(cn)}
+ const sc=mode==='time'?mins:mode==='peak'?(exp>=TH[ctx.L]?exp/100:exp/400):secs;
+ return{sc,secs,mins,peak,exp,expCar,hot:[...hot].sort((x,y)=>x-y),car:Object.entries(cars).sort((x,y)=>y[1]-x[1])[0]?.[0]||(exp>=TH[ctx.L]?expCar:0)}}
 // 待ち時間（1〜10分が目安）と乗り換え回数への減点。短すぎる乗車の繰り返しを避けるため乗り換え1回ごとに減点
 // XS='few' のときだけ乗り換え1回ごと・短い乗車に減点。'short' は短い区間の往復も同じように評価する
 let XS='few';
@@ -197,12 +202,24 @@ function autoSearch(ctx,from,to,t0,t1,maxWait,mode){
    const key=ns.st+'|'+ns.t+'|'+c.ti,ex=next.get(key);if(!ex||ex.sc<ns.sc)next.set(key,ns)});
   beam=[...next.values()].sort((a,b)=>b.sc-a.sc).slice(0,250)}
  return done.sort((a,b)=>b.sc-a.sc)}
+// AからBへ（乗り継ぎ可・最大4本）で行く方法を探す。直通がなくても途中駅で乗り継いで結ぶ
+function pathSearch(ctx,A,B,t,t1,maxWait,mode,first){
+ let beam=[{st:A,t,sc:0,legs:[]}];const done=[];
+ for(let d=0;d<4&&beam.length;d++){const next=new Map();
+  for(const s of beam)legsFrom(ctx,s.st,s.t,first&&!s.legs.length,maxWait,t1,(c,tr,sj,w)=>{
+   if(s.legs.length&&s.legs.at(-1).ti===c.ti)return;
+   const ls=legScore(ctx,tr,c.t,sj[1],mode),ns={st:sj[0],t:sj[1],sc:s.sc+ls.sc-penalty(w,first&&!s.legs.length,sj[1]-c.t),
+    legs:[...s.legs,{ti:c.ti,from:s.st,to:sj[0],dep:c.t,arr:sj[1],wait:w,dn:tr[5][c.i][2],an:sj[2],...ls}]};
+   if(ns.st===B){done.push(ns);return}
+   const key=ns.st+'|'+ns.t+'|'+c.ti,ex=next.get(key);if(!ex||ex.sc<ns.sc)next.set(key,ns)});
+  beam=[...next.values()].sort((a,b)=>b.sc-a.sc).slice(0,120)}
+ return done.sort((a,b)=>b.sc-a.sc||a.t-b.t).slice(0,6)}
 function manualSearch(ctx,seq,t0,t1,maxWait,mode){
  let states=[{t:t0,sc:0,legs:[]}],failAt=-1;
  for(let k=0;k<seq.length-1;k++){const A=seq[k],B=seq[k+1],next=[];
-  for(const s of states)legsFrom(ctx,A,s.t,!s.legs.length,maxWait,t1,(c,tr,sj,w)=>{if(sj[0]!==B)return;
-   const ls=legScore(ctx,tr,c.t,sj[1],mode);
-   next.push({t:sj[1],sc:s.sc+ls.sc-penalty(w,!s.legs.length,sj[1]-c.t),legs:[...s.legs,{ti:c.ti,from:A,to:B,dep:c.t,arr:sj[1],wait:w,dn:tr[5][c.i][2],an:sj[2],...ls}]})});
+  for(const s of states.slice(0,40))for(const p of pathSearch(ctx,A,B,s.t,t1,maxWait,mode,!s.legs.length)){
+   if(s.legs.length)p.legs[0]={...p.legs[0],wait:p.legs[0].dep-s.t};
+   next.push({t:p.t,sc:s.sc+p.sc,legs:[...s.legs,...p.legs]})}
   if(!next.length){failAt=k;states=[];break}
   const seen=new Map();for(const n of next){const key=n.t+'|'+n.legs.at(-1).ti,ex=seen.get(key);if(!ex||ex.sc<n.sc)seen.set(key,n)}
   states=[...seen.values()].sort((a,b)=>b.sc-a.sc).slice(0,300)}
@@ -217,7 +234,7 @@ function solve(mode){
   if(seq.some(x=>x<0))return{msg:'記録のない駅が含まれています'};
   let last=null;
   for(const[tt,mw,note]of steps){const r=manualSearch(ctx,seq,t0,tt,mw,mode);if(r.routes.length)return{ctx,routes:dedupe(r.routes),note};last=r}
-  const k=last.failAt;return{msg:`${esc($('from').value&&[$('from').value,...[...$('vias').querySelectorAll('select')].map(s=>s.value),$('to').value][k])} → ${esc([$('from').value,...[...$('vias').querySelectorAll('select')].map(s=>s.value),$('to').value][k+1])} を1本で結ぶ停車列車が見つかりませんでした（間に経由駅を足すと見つかることがあります）`}}
+  const k=last.failAt;return{msg:`${esc($('from').value&&[$('from').value,...[...$('vias').querySelectorAll('select')].map(s=>s.value),$('to').value][k])} → ${esc([$('from').value,...[...$('vias').querySelectorAll('select')].map(s=>s.value),$('to').value][k+1])} を結ぶ列車（乗り継ぎを含む）が見つかりませんでした。路線の選択や時間帯を見直してください`}}
  if(to<0)return{msg:'下車駅の記録がまだありません'};
  for(const[tt,mw,note]of steps){const r=autoSearch(ctx,from,to,t0,tt,mw,mode).filter(x=>x.sc>0);if(r.length)return{ctx,routes:dedupe(r),note}}
  // 最後の手段：発車駅から乗れる列車のうち、一番混雑するもの（戻りの条件なし）
@@ -230,29 +247,34 @@ function routeHtml(ctx,r,title){
  const secs=r.legs.reduce((a,l)=>a+l.secs,0),mins=r.legs.reduce((a,l)=>a+l.mins,0);
  let h=`<h2>${title}</h2><div class="card sum">${esc(P.S[first.from])} <b>${hm(first.dep)}</b> 発 → ${esc(P.S[last.to])} <b>${hm(last.arr)}</b> 着<br>
   所要 ${dur(last.arr-first.dep)}（乗車 ${dur(ride)}・ホーム待ち ${dur(wait-first.wait)}）・乗り換え ${r.legs.length-1}回<br>
-  <span class="sub">${LVN[ctx.L]}の区間 約${secs.toFixed(1)}区間分・混雑した状態で乗る時間 約${Math.round(mins)}分（見込み）</span></div>`;
+  <span class="sub">${LVN[ctx.L]}の区間 約${secs.toFixed(1)}区間分・混雑した状態で乗る時間 約${Math.round(mins)}分・期待できる最大混雑率 ${Math.max(...r.legs.map(l=>l.exp))}%（見込み）</span></div>`;
  r.legs.forEach((l,i)=>{const tr=ctx.trs[l.ti],ln=P.L[tr[5].find(s=>s[1]>=l.dep)?.[3]]||'';
   if(i>0)h+=`<div class="wait${l.wait>10?' long':''}">${esc(P.S[l.from])}で${r.legs[i-1].from===l.to?'反対方向の':'次の'}列車を ${l.wait}分待ち${l.wait>10?'（混雑列車を優先）':''}</div>`;
   else if(l.wait>0)h+=`<div class="wait">${esc(P.S[l.from])}で ${l.wait}分待ち</div>`;
   const nt=l.car&&noteFor(P.S[l.from],tr[3],l.car);
   h+=`<div class="leg${l.secs<.5?' cool':''}"><div class="t">${i+1}. <button class="tlink" data-no="${esc(tr[0])}" data-title="${esc(tr[0]+' '+tr[1]+' '+tr[2]+'行')}">${hm(l.dep)}</button> ${esc(P.S[l.from])} → ${hm(l.arr)} ${esc(P.S[l.to])}（${l.arr-l.dep}分）</div>
    <div>${esc(tr[0])} ${esc(tr[1])} ${esc(tr[2])}行${ln?`（${LN[ln]||ln}）`:''}${l.car?`　<b>おすすめ ${l.car}号車</b>`:''}</div>
-   <div class="sub">${LVN[ctx.L]}になる確率 最大${Math.round(l.peak*100)}%・混雑した状態 約${Math.round(l.mins)}分／観測 発${l.dn}日・着${l.an}日</div>${nt?`<div class="sub">🚪 ${esc(nt)}</div>`:''}</div>`});
+   ${l.exp>=0?`<div>期待できる最大混雑率 <b>${l.exp}%</b>${l.expCar?`（${l.expCar}号車）`:''}</div>`:''}
+   <div>混雑する号車：<b>${l.hot.length?l.hot.join('・')+'号車':(l.car?l.car+'号車（最も混みやすい）':'記録なし')}</b></div>
+   <div class="sub">${LVN[ctx.L]}になる確率 最大${Math.round(l.peak*100)}%・混雑した状態 約${Math.round(l.mins)}分／観測 発${l.dn||'推定'}${l.dn?'日':''}・着${l.an||'推定'}${l.an?'日':''}</div>${nt?`<div class="sub">🚪 ${esc(nt)}</div>`:''}</div>`});
  return h}
 function run(){
  if(!P)return;if(!selLines().size){$('out').innerHTML='<div class="empty">路線を1つ以上選んでください</div>';return}
  $('out').innerHTML='<div class="empty">計算中…</div>';
  setTimeout(()=>{
   const styles=$('xs').value==='both'?['few','short']:[$('xs').value],runs=[];
-  for(const st of styles){XS=st;const tag=st==='few'?'（乗り換え少なめ）':'（短い往復もOK）';
-   runs.push([solve('sec'),'混雑区間の多さで選んだルート'+tag],[solve('time'),'混雑時間の長さで選んだルート'+tag])}
-  const A=runs[0][0],B=runs[1][0];
+  const EVN={peak:'最大混雑率を優先したルート',time:'混雑時間を優先したルート',sec:'混雑区間の多さを優先したルート'};
+  const evs=$('ev').value==='all'?['peak','time','sec']:[$('ev').value];
+  for(const st of styles){XS=st;const tag=styles.length>1?(st==='few'?'（乗り換え少なめ）':'（短い往復もOK）'):'';
+   for(const e of evs)runs.push([solve(e),EVN[e]+tag])}
+  const single=runs.length===1;
+  const A=runs[0][0],B=(runs[1]||runs[0])[0];
   if(runs.every(r=>r[0].msg)){$('out').innerHTML=`<div class="empty">${A.msg}</div>`;return}
   let h='';
   for(const[res,label]of runs){
    if(res.msg){h+=`<h2>${label}</h2><div class="empty">${res.msg}</div>`;continue}
    if(res.note)h+=`<div class="relax">${res.note}</div>`;
-   h+=res.routes.map((r,i)=>routeHtml(res.ctx,r,i?`${label}（別の候補）`:label)).join('<div class="alt"></div>')+'<div class="alt"></div>'}
+   h+=(single?res.routes:res.routes.slice(0,1)).map((r,i)=>routeHtml(res.ctx,r,i?`${label}（別の候補）`:label)).join('<div class="alt"></div>')+'<div class="alt"></div>'}
   VISITS=[];const r0=(A.routes||B.routes||[])[0],c0=(A.ctx||B.ctx);
   if(r0)for(const l of r0.legs)for(const s of c0.trs[l.ti][5])if(s[1]>=l.dep&&s[1]<=l.arr)VISITS.push({st:P.S[s[0]],t:s[1]});
   $('out').innerHTML=h;renderSchools();
