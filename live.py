@@ -63,6 +63,12 @@ def snapshot(now):
         monitor = {}
         errors.append(f"混雑データ: {e}")
     hms = now.strftime("%H:%M:%S")
+    allst = {}                                           # 全路線の駅コード→駅名（路線をまたぐ列車の区間名に使う）
+    for line in C.LINES:
+        try:
+            allst.update(stations(line))
+        except Exception:
+            pass
     for line in C.LINES:
         try:
             tj = C.fetch(C.WEST + f"{line}.json")
@@ -93,7 +99,7 @@ def snapshot(now):
             dest = t.get("dest")
             rows.append([hms, line, no, t.get("displayType", ""),
                          dest.get("text", "") if isinstance(dest, dict) else str(dest or ""),
-                         t.get("direction", ""), C.section_name(t.get("pos"), st), t.get("delayMinutes", ""),
+                         t.get("direction", ""), C.section_name(t.get("pos"), allst), t.get("delayMinutes", ""),
                          ";".join(f"{c.get('carNo')}:{c.get('congestion')}" for c in cars)])
     data = {"t": now.strftime("%Y-%m-%d %H:%M:%S"), "live": "github", "lines": lines, "monitor": mon, "errors": errors,
             "jrUpdateSec": round(statistics.median(_jr["gaps"])) if len(_jr["gaps"]) >= 3 else None,
