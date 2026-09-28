@@ -43,7 +43,7 @@ td{padding:4px;border-bottom:1px solid var(--rule);white-space:nowrap}
 .chip{display:inline-block;font-size:11px;border-radius:10px;padding:0 7px;margin:3px 4px 0 0;background:var(--bg);color:var(--sub)}
 
 
-:root{--ok:#1f8a4c;--warn:#c98a00;--bad:#c23b22;--c-hokurikubiwako:#0072bc;--c-kyoto:#0072bc;--c-nara:#a0783c;--c-sagano:#7b4b94}
+:root{--ok:#1f8a4c;--warn:#c98a00;--bad:#c23b22;--c-hokurikubiwako:#0072bc;--c-kyoto:#0072bc;--c-nara:#a0783c;--c-sagano:#7b4b94;--c-kosei:#00a0de}
 .tabsbar{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .tab{border:2px solid var(--lc);color:var(--lc);background:transparent;border-radius:999px;padding:3px 12px;font-weight:700;font-size:13px}
 .tab[aria-pressed=true]{background:var(--lc);color:#fff}
@@ -82,11 +82,12 @@ let T=[40,60,80,100,130,160];
 const LBL=['','空席があります','ほぼ、席はうまっています','ゆったり立つことができます','吊り革につかまることができます','多くの方が乗っています','大変多くの方が乗っています','とても混雑しています'];
 const SHORT=['','空席','ほぼ満席','ゆったり立','吊り革','多い','大変多い','とても混雑'];
 const lvOf=p=>{let l=1;for(const t of T)if(p>=t)l++;return l};
-const LINES={hokurikubiwako:"琵琶湖線",kyoto:"JR京都線",nara:"奈良線",sagano:"嵯峨野線"};
+const LINES={hokurikubiwako:"琵琶湖線",kyoto:"JR京都線",nara:"奈良線",sagano:"嵯峨野線",kosei:"湖西線"};
 // 路線ごとの駅（この駅の範囲にいる列車だけをその路線に表示する）
 const LST={kyoto:'京都 西大路 桂川 向日町 長岡京 山崎 島本 高槻 摂津富田 JR総持寺 茨木 千里丘 岸辺 吹田 東淀川 新大阪 大阪',
  hokurikubiwako:'長浜 田村 坂田 米原 彦根 南彦根 河瀬 稲枝 能登川 安土 近江八幡 篠原 野洲 守山 栗東 草津 南草津 瀬田 石山 膳所 大津 山科 京都',
  sagano:'京都 梅小路京都西 丹波口 二条 円町 花園 太秦 嵯峨嵐山 保津峡 馬堀 亀岡 並河 千代川 八木 吉富 園部',
+ kosei:'京都 山科 大津京 唐崎 比叡山坂本 おごと温泉 堅田 小野 和邇 蓬莱 志賀 比良 近江舞子 北小松 近江高島 安曇川 新旭 近江今津 近江中庄 マキノ 永原 近江塩津',
  nara:'京都 東福寺 稲荷 JR藤森 桃山 六地蔵 木幡 黄檗 宇治 JR小倉 新田 城陽 長池 山城青谷 山城多賀 玉水 棚倉 上狛 木津 平城山 奈良'};
 const LSET=Object.fromEntries(Object.entries(LST).map(([k,v])=>[k,new Set(v.split(' '))]));
 const nrm=s=>String(s||'').replace(/ＪＲ/g,'JR');
