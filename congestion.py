@@ -70,6 +70,39 @@ LINE_STATIONS = {
              ("JR-D22", "奈良")],
 }
 _LSET = {k: {n for _, n in v} for k, v in LINE_STATIONS.items()}
+
+# 種別ごとの停車駅（公式の停車駅一覧をもとに手入力）。ここにない種別（特急など）は記録から推定する
+_SP = {
+    "hokurikubiwako": {
+        "新快速": "米原 彦根 能登川 近江八幡 野洲 守山 草津 南草津 石山 大津 山科 京都",
+        "普通": "米原 南彦根 彦根 河瀬 稲枝 能登川 安土 近江八幡 篠原 野洲 守山 栗東 草津 南草津 瀬田 石山 膳所 大津 山科 京都"},
+    "sagano": {
+        "快速": "京都 丹波口 二条 円町 嵯峨嵐山 亀岡 並河 千代川 八木 吉富 園部",
+        "普通": "京都 梅小路京都西 丹波口 二条 円町 花園 太秦 嵯峨嵐山 保津峡 亀岡 並河 千代川 八木 吉富 園部"},
+    "kyoto": {
+        "新快速": "京都 高槻 新大阪 大阪",
+        "快速": "京都 西大路 桂川 向日町 長岡京 山崎 島本 高槻 茨木 新大阪 大阪",
+        "普通": "京都 西大路 桂川 向日町 長岡京 山崎 島本 高槻 摂津富田 JR総持寺 茨木 千里丘 岸辺 吹田 東淀川 新大阪 大阪"},
+    "nara": {
+        "みやこ路快速": "京都 東福寺 稲荷 六地蔵 宇治 JR小倉 新田 城陽 玉水 木津 奈良",
+        "区間快速": "京都 東福寺 稲荷 六地蔵 宇治 JR小倉 新田 城陽 長池 山城青谷 山城多賀 玉水 棚倉 上狛 木津 平城山 奈良",
+        "普通": "京都 東福寺 稲荷 JR藤森 桃山 六地蔵 木幡 黄檗 宇治 JR小倉 新田 城陽 長池 山城青谷 山城多賀 玉水 棚倉 上狛 木津 平城山 奈良"},
+}
+STOP_PATTERNS = {ln: {t: set(v.split()) for t, v in d.items()} for ln, d in _SP.items()}
+
+
+def type_key(typ):
+    typ = str(typ)
+    for k in ("みやこ路快速", "区間快速", "新快速", "快速", "普通"):
+        if k in typ:
+            return k
+    return None
+
+
+def stop_ok(typ, line, station):
+    """停車駅一覧で判定できれば True/False、判定できない種別・路線なら None"""
+    lst = STOP_PATTERNS.get(line, {}).get(type_key(typ) or "")
+    return None if lst is None else norm(station) in lst
 # 運行情報（遅延の原因）の路線キー候補
 TRAFFIC_KEYS = {"hokurikubiwako": ["biwako", "hokurikubiwako", "hokuriku"], "kyoto": ["kyoto"],
                 "nara": ["nara"], "sagano": ["sagano", "sanin1", "sanin"]}
@@ -104,7 +137,7 @@ TIMELINE_DAYS = 14       # 横並びタイムラインに出す日数
 RAIN_BINS = [0.5, 1, 3, 5, 10, 20, 30]   # 1時間雨量(mm)の区切り
 WIND_BINS = [3, 5, 8, 10, 13, 15, 20]    # 風速(m/s)の区切り
 MAX_BIN = 25
-STATS_VERSION = 5
+STATS_VERSION = 7
 
 
 def is_exp(typ):
@@ -254,6 +287,14 @@ def collect(now):
         traffic = {}
         print("運行情報の取得に失敗:", e)
     rows, conds, seen, errors = [], [], set(), []
+    allst = station_codes()                     # 全路線の駅コード→駅名（路線をまたぐ列車の区間名に使う）
+    for line in LINES:
+        try:
+            allst.update({str(x["info"]["code"]): x["info"]["name"]
+                          for x in fetch(WEST + f"{line}_st.json").get("stations", []) if x.get("info")})
+        except Exception:
+            pass
+    save_station_codes(allst)
     latest = {"t": now.strftime("%Y-%m-%d %H:%M"), "lines": {}, "monitor": {}, "errors": errors}
     for line in LINES:
         try:
@@ -294,7 +335,7 @@ def collect(now):
             dest = t.get("dest")
             rows.append([hhmm, line, no, t.get("displayType", ""),
                          dest.get("text", "") if isinstance(dest, dict) else str(dest or ""),
-                         t.get("direction", ""), section_name(t.get("pos"), m), t.get("delayMinutes", ""),
+                         t.get("direction", ""), section_name(t.get("pos"), allst), t.get("delayMinutes", ""),
                          ";".join(f"{c.get('carNo')}:{c.get('congestion')}:{c.get('status')}:{c.get('temp')}:"
                                   + ".".join(str(x) for x in (c.get('types') or [])) for c in cars)])
     if len(errors) == len(LINES):
@@ -324,31 +365,75 @@ def collect(now):
 
 
 # ================= 読み込み =================
+_CODES = None
+
+
+def station_codes():
+    global _CODES
+    if _CODES is None:
+        try:
+            with open("data/station_codes.json", encoding="utf-8") as f:
+                _CODES = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            _CODES = {}
+    return _CODES
+
+
+def save_station_codes(d):
+    os.makedirs("data", exist_ok=True)
+    with open("data/station_codes.json", "w", encoding="utf-8") as f:
+        json.dump(d, f, ensure_ascii=False, sort_keys=True)
+
+
+def fix_section(sec):
+    """「不明(0400_0401)」のような区間名を、全路線の駅一覧で駅名に直す"""
+    if sec.startswith("不明(") and sec.endswith(")"):
+        fixed = section_name(sec[3:-1], station_codes())
+        if not fixed.startswith("不明("):
+            return fixed
+    return sec
+
+
+SERVICE_START = 4 * 60     # 運行日の区切り（4時）。0〜3時台の記録は前日の運行として扱う
+
+
 @functools.lru_cache(maxsize=None)
-def load_day(ds):
-    raw, cond = [], {}
+def read_raw(ds):
+    """その日付のファイルに書かれた列車の記録（時刻は書かれたまま）"""
+    raw = []
     for p in [f"{RAW}/{ds}.csv", f"{DB_RAW}/{ds}.csv.gz"] + sorted(glob.glob(f"{DB_RAW}/{ds}/*.csv.gz")):
         if not os.path.exists(p):
             continue
         with (gzip.open(p, "rt", encoding="utf-8") if p.endswith(".gz") else open(p, encoding="utf-8")) as f:
-                r = csv.reader(f)
-                next(r, None)
-                for row in r:
-                    if len(row) < 9:
+            r = csv.reader(f)
+            next(r, None)
+            for row in r:
+                if len(row) < 9:
+                    continue
+                tm, line, no, typ, dest, dr, sec, delay, cars = row[:9]
+                sec = fix_section(sec)
+                cl = []
+                for c in cars.split(";"):
+                    x = c.split(":")
+                    try:
+                        car, pct = int(x[0]), int(x[1])
+                    except (ValueError, IndexError):
                         continue
-                    tm, line, no, typ, dest, dr, sec, delay, cars = row[:9]
-                    cl = []
-                    for c in cars.split(";"):
-                        x = c.split(":")
-                        try:
-                            car, pct = int(x[0]), int(x[1])
-                        except (ValueError, IndexError):
-                            continue
-                        if pct >= 0:
-                            cl.append((car, pct))
-                    raw.append((tm, int(tm[:2]) * 60 + int(tm[3:5]), line_fix(line, sec), no, typ, dest,
-                                int(dr) if dr.isdigit() else 0, sec, int(num(delay) or 0), tuple(cl)))
+                    if pct >= 0:
+                        cl.append((car, pct))
+                raw.append((tm, int(tm[:2]) * 60 + int(tm[3:5]), line_fix(line, sec), no, typ, dest,
+                            int(dr) if dr.isdigit() else 0, sec, int(num(delay) or 0), tuple(cl)))
+    return raw
+
+
+@functools.lru_cache(maxsize=None)
+def load_day(ds):
+    """運行日（4時〜翌3時台）ごとの記録。翌日0〜3時台は「24〜27時台」として続けて並べる"""
+    nxt = (dt.date.fromisoformat(ds) + dt.timedelta(days=1)).isoformat()
+    raw = [r for r in read_raw(ds) if r[1] >= SERVICE_START]
+    raw += [(f"{int(r[0][:2]) + 24:02d}{r[0][2:]}", r[1] + 1440, *r[2:]) for r in read_raw(nxt) if r[1] < SERVICE_START]
     raw.sort(key=lambda r: r[0])                 # 5分ごと・30秒ごとの記録を時刻順に並べる
+    cond = {}
     p = f"{COND}/{ds}.csv"
     if os.path.exists(p):
         with open(p, encoding="utf-8") as f:
@@ -450,7 +535,11 @@ def aggregate(pid, days):
         for r in load_day(ds)[0]:
             if r[7].endswith("駅"):
                 stop_days[(r[3], r[7])].add(ds)
-    is_stop = lambda no, secn: secn.endswith("駅") and len(stop_days.get((no, secn), ())) >= 2
+    def is_stop(no, secn, typ, line):
+        if not secn.endswith("駅"):
+            return False
+        ok = stop_ok(typ, line, secn[:-1])
+        return ok if ok is not None else len(stop_days.get((no, secn), ())) >= 2
 
     for ds in days:
         d = dt.date.fromisoformat(ds)
@@ -475,7 +564,7 @@ def aggregate(pid, days):
             tm, mi, line, no, typ, dest, dr, secn, delay, cars = r
             runs.add(ds + tm)
             hr, s, li, tg = mi // 60, si(secn), L.index(line) if line in L else 0, is_exp(typ)
-            if is_stop(no, secn):
+            if is_stop(no, secn, typ, line):
                 last_stop[no] = secn
             org = si(last_stop[no]) if no in last_stop else -1     # 混雑の起点（直前の停車駅）
             meta = tmeta.setdefault(no, {"l": line, "t": typ, "d": dest, "r": dr, "h": Counter()})
@@ -485,7 +574,7 @@ def aggregate(pid, days):
                 b = min(pct // 10, MAX_BIN)
                 lv = lv_of(pct)
                 sec[(li, dr, s, car, hr, dty, tg, b)] += 1
-                trn[(no, car, dty, b)] += 1
+                trn[(no, li, car, dty, b)] += 1
                 if b >= 10:
                     tsec[(no, s, car, dty, b)] += 1
                 if lv >= 4:
@@ -512,25 +601,25 @@ def aggregate(pid, days):
             train_days[(no, dty)].add(ds)
             lst, ls = [], None
             for r in obs:
-                if is_stop(no, r[7]):
+                if is_stop(no, r[7], r[4], r[2]):
                     ls = r[7]
                 lst.append(ls)
             for car in sorted({c for r in obs for c, _ in r[9]}):
-                seq = [(r[1], r[7], p, lst[k]) for k, r in enumerate(obs) for c, p in r[9] if c == car]
+                seq = [(r[1], r[7], p, lst[k], r[2]) for k, r in enumerate(obs) for c, p in r[9] if c == car]
                 for Lv in LEVELS:
                     cur = None
-                    for mi, secn, pct, org in seq + [(None, None, -1, None)]:
+                    for mi, secn, pct, org, ln in seq + [(None, None, -1, None, None)]:
                         hit = mi is not None and lv_of(pct) >= Lv
                         if cur and (not hit or mi - cur[1] > 12):
                             eps[(no, car, dty, Lv)].append((ds, *cur))
                             cur = None
                         if hit:
                             if cur is None:
-                                cur = [mi, mi, secn, secn, pct, secn, org]
+                                cur = [mi, mi, secn, secn, pct, secn, org, ln]
                             else:
                                 cur[1], cur[3] = mi, secn
                                 if pct > cur[4]:
-                                    cur[4], cur[5] = pct, secn
+                                    cur[4], cur[5], cur[7] = pct, secn, ln
     pats = []
     for (no, car, dty, Lv), lst in eps.items():
         lst.sort(key=lambda e: e[1])
@@ -550,13 +639,14 @@ def aggregate(pid, days):
                          int(statistics.median(x[1] for x in cl)), int(statistics.median(x[2] for x in cl)),
                          si(mode(3)), si(mode(4)), si(mode(6)), max(x[5] for x in cl),
                          round(sum(x[5] for x in cl) / len(cl)),
-                         si(Counter(orgs).most_common(1)[0][0]) if orgs else -1])
+                         si(Counter(orgs).most_common(1)[0][0]) if orgs else -1,
+                         L.index(Counter(x[8] for x in cl).most_common(1)[0][0]) if cl[0][8] in L else -1])
     ps, pe = period_range(pid)
     return {
         "v": STATS_VERSION, "id": pid, "from": ps.isoformat(), "to": pe.isoformat(),
         "days": sorted(days), "runs": len(runs), "L": L, "S": S,
         "sec": hist(sec),        # [路線, 方向, 区間, 号車, 時, 平日0/土休日1, 特急1/他0, [bin,回数,...]]
-        "trn": hist(trn),        # [列車番号, 号車, 平日0/土休日1, [bin,回数,...]]
+        "trn": hist(trn),        # [列車番号, 路線, 号車, 平日0/土休日1, [bin,回数,...]]
         "tsec": hist(tsec),      # [列車番号, 区間, 号車, 平日0/土休日1, [bin,回数,...]]
         "secMin": [[*k, v] for k, v in secmin.items()],   # [路線,方向,区間,号車,平日/土休日,特急,[bin,分,起点駅,...]]
         "pat": pats,  # [列車,号車,平日/土休日,レベル,混んだ日数,走った日数,開始分,終了分,開始区間,終了区間,最混雑区間,最大%,平均%,起点駅]
@@ -582,6 +672,8 @@ def timeline(dates):
             x[2] = max(x[2], c["dmax"])
             x[3] = max(x[3], c["d5"])
         for r in passages(raw):
+            if r[1] >= 1440:
+                continue                              # 0時以降はグラフの範囲外
             x = g[(r[2], r[1] // 30)]
             tg = is_exp(r[4])
             for _, p in r[9]:
@@ -712,14 +804,17 @@ def patrol(dates):
             c6, c7 = x["h6"].most_common(1), x["h7"].most_common(1)
             crowd.append([med, round(c6[0][1] / n, 2) if c6 else 0, round(c7[0][1] / n, 2) if c7 else 0,
                           c6[0][0] if c6 else 0, c7[0][0] if c7 else 0, n, li])
-            if secn.endswith("駅") and n >= 2:     # 2日以上その駅で観測＝停車している可能性が高い
-                stops.append([si(secn[:-1]), med, n, li])
+            if secn.endswith("駅"):
+                ok = stop_ok(tr["meta"][0], L[li], secn[:-1])    # 停車駅一覧で判定。わからない種別は2日以上の観測で推定
+                if ok or (ok is None and n >= 2):
+                    stops.append([si(norm(secn[:-1])), med, n, li])
         if len(stops) < 2:
             continue
         stops.sort(key=lambda s: s[1])
         crowd.sort()
         trains[dty].append([no, *tr["meta"], len(tr["days"]), stops, crowd])
-    return {"S": S, "L": L, "days": len(dates), "from": dates[0] if dates else "", "trains": trains}
+    return {"S": S, "L": L, "days": len(dates), "from": dates[0] if dates else "", "trains": trains,
+            "stations": {k: [n for _, n in v] for k, v in LINE_STATIONS.items()}}
 
 
 # ================= 時刻表（実測）・走行記録 =================
@@ -786,7 +881,8 @@ def timetable(dates, pats):
         if line not in out or stn not in _LSET[line]:
             continue
         n = len(a["days"])
-        if n < 2:                       # 2日以上その駅で観測された列車だけ（通過の可能性を減らす）
+        ok = stop_ok(a["typ"], line, stn)       # 停車駅一覧で判定。わからない種別は2日以上の観測で推定
+        if ok is False or (ok is None and n < 2):
             continue
         row = [int(statistics.median(a["m"])), no, a["typ"], a["dest"], n, len(train_days[(dty, no)]),
                *[round(a["hit"][Lv] / n, 2) for Lv in LEVELS],
