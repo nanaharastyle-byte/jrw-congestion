@@ -1,317 +1,391 @@
 {
- "説明": "セグメントごとに学校の最寄駅・始業時間・駅からのアクセス・通学時間帯をまとめる。評価（男女比・評判・服装など）は入れない。値はすべて推測で、公式情報で要確認。segments に追加していける",
+ "description": "学校の最寄駅・始業時間（またはSHR開始時間）・駅アクセス・偏差値・路線情報。ルート計算・交通負荷シミュレーション用の構造化データ。line はJR西日本のデータの路線名（hokurikubiwako / kyoto / nara / sagano / kosei）",
+ "buffer": {
+  "徒歩": 5,
+  "バス": 10,
+  "乗換": 5
+ },
  "segments": [
   {
    "id": "hs",
    "name": "高校",
    "items": [
     {
-     "name": "洛南高校",
-     "station": "京都",
-     "line": "kyoto",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩15分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
-    },
-    {
-     "name": "京都府立 向陽高校",
-     "station": "向日町",
-     "line": "kyoto",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩15分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
-    },
-    {
-     "name": "京都府立 乙訓高校",
-     "station": "長岡京",
-     "line": "kyoto",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩10分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
-    },
-    {
-     "name": "京都府立 西乙訓高校",
-     "station": "長岡京",
-     "line": "kyoto",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "バス15分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
-    },
-    {
-     "name": "大阪府立 島本高校",
-     "station": "島本",
-     "line": "kyoto",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩15分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
-    },
-    {
-     "name": "大阪府立 芥川高校",
-     "station": "摂津富田",
-     "line": "kyoto",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩15分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
-    },
-    {
-     "name": "大阪府立 茨木高校",
-     "station": "茨木",
-     "line": "kyoto",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩15分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
-    },
-    {
-     "name": "追手門学院高校",
-     "station": "茨木",
-     "line": "kyoto",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "バス15分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
+     "name": "洛陽総合高校",
+     "station": "円町",
+     "line": "sagano",
+     "kind": "私立高校",
+     "start": "9:00",
+     "access": {
+      "type": "徒歩",
+      "min": 5
+     },
+     "hensachi": 42,
+     "arriving_time": 85
     },
     {
      "name": "京都府立 朱雀高校",
      "station": "二条",
      "line": "sagano",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩5分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
+     "kind": "公立高校",
+     "start": "8:30",
+     "access": {
+      "type": "徒歩",
+      "min": 5
+     },
+     "hensachi": 48,
+     "arriving_time": 92
     },
     {
-     "name": "京都市立 西京高校",
-     "station": "二条",
-     "line": "sagano",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩10分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
+     "name": "華頂女子高校",
+     "station": "京都",
+     "line": "kyoto",
+     "kind": "私立高校",
+     "start": "8:50",
+     "access": {
+      "type": "バス",
+      "min": 20
+     },
+     "hensachi": 45,
+     "arriving_time": 64,
+     "note": "最寄り実質：地下鉄東西線 東山駅（約300m、徒歩約4分）。"
     },
     {
-     "name": "京都府立 山城高校",
-     "station": "円町",
-     "line": "sagano",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩10分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
-    },
-    {
-     "name": "花園高校",
-     "station": "花園",
-     "line": "sagano",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩5分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
-    },
-    {
-     "name": "京都府立 嵯峨野高校",
-     "station": "太秦",
-     "line": "sagano",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩10分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
-    },
-    {
-     "name": "京都府立 北嵯峨高校",
-     "station": "嵯峨嵐山",
-     "line": "sagano",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "バス15分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
-    },
-    {
-     "name": "京都府立 亀岡高校",
-     "station": "亀岡",
-     "line": "sagano",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩15分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
-    },
-    {
-     "name": "京都府立 南丹高校",
-     "station": "八木",
-     "line": "sagano",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩15分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
-    },
-    {
-     "name": "京都府立 園部高校",
-     "station": "園部",
-     "line": "sagano",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩15分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
-    },
-    {
-     "name": "滋賀県立 膳所高校",
-     "station": "膳所",
-     "line": "hokurikubiwako",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩5分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
-    },
-    {
-     "name": "滋賀県立 石山高校",
-     "station": "石山",
-     "line": "hokurikubiwako",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "バス10分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
-    },
-    {
-     "name": "滋賀県立 瀬田工業高校",
-     "station": "瀬田",
-     "line": "hokurikubiwako",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩15分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
+     "name": "京都精華学園高校",
+     "station": "京都",
+     "line": "kyoto",
+     "kind": "私立高校",
+     "start": "8:30",
+     "access": {
+      "type": "バス",
+      "min": 25
+     },
+     "hensachi": 45,
+     "arriving_time": 78,
+     "note": "最寄り実質：京阪本線 出町柳駅（約400m、徒歩約5分）。"
     },
     {
      "name": "京都市立 日吉ケ丘高校",
      "station": "東福寺",
      "line": "nara",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩15分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
+     "kind": "公立高校",
+     "start": "8:55",
+     "access": {
+      "type": "徒歩",
+      "min": 15
+     },
+     "hensachi": 51,
+     "arriving_time": 97
     },
     {
-     "name": "京都府立 桃山高校",
-     "station": "桃山",
-     "line": "nara",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩10分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
+     "name": "花園高校",
+     "station": "円町",
+     "line": "sagano",
+     "kind": "私立高校",
+     "start": "8:30",
+     "access": {
+      "type": "徒歩",
+      "min": 10
+     },
+     "hensachi": 55,
+     "arriving_time": 53,
+     "note": "最寄り実質：JR嵯峨野線 花園駅（約800m、徒歩約10分）/ 円町駅（約850m、徒歩約10分）。"
     },
     {
-     "name": "京都府立 東宇治高校",
-     "station": "黄檗",
-     "line": "nara",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩15分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
+     "name": "大阪府立 東淀川高校",
+     "station": "東淀川",
+     "line": "kyoto",
+     "kind": "公立高校",
+     "start": "8:50",
+     "access": {
+      "type": "徒歩",
+      "min": 10
+     },
+     "hensachi": 50,
+     "arriving_time": 100
     },
     {
-     "name": "京都府立 莵道高校",
-     "station": "黄檗",
-     "line": "nara",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩20分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
+     "name": "大阪府立 桜和高校（旧・扇町総合）",
+     "station": "大阪",
+     "line": "kyoto",
+     "kind": "公立高校",
+     "start": "8:35",
+     "access": {
+      "type": "徒歩",
+      "min": 20
+     },
+     "hensachi": 50,
+     "arriving_time": 42,
+     "note": "最寄り実質：Osaka Metro 南森町駅 / JR東西線 大阪天満宮駅（約600m、徒歩約8分）。"
     },
     {
-     "name": "立命館宇治高校",
-     "station": "宇治",
-     "line": "nara",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "バス15分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
+     "name": "滋賀県立 大津商業高校",
+     "station": "大津",
+     "line": "hokurikubiwako",
+     "kind": "公立高校",
+     "start": "8:35",
+     "access": {
+      "type": "徒歩",
+      "min": 20
+     },
+     "hensachi": 47,
+     "arriving_time": 28,
+     "note": "最寄り実質：京阪石山坂本線 大津市役所前駅（約250m、徒歩約3分）。"
+    },
+    {
+     "name": "滋賀県立 堅田高校",
+     "station": "堅田",
+     "line": "kosei",
+     "kind": "公立高校",
+     "start": "8:35",
+     "access": {
+      "type": "徒歩",
+      "min": 17
+     },
+     "hensachi": 44,
+     "arriving_time": 15
+    },
+    {
+     "name": "滋賀県立 北大津高校",
+     "station": "小野",
+     "line": "kosei",
+     "kind": "公立高校",
+     "start": "8:35",
+     "access": {
+      "type": "徒歩",
+      "min": 15
+     },
+     "hensachi": 43,
+     "arriving_time": 47
+    },
+    {
+     "name": "滋賀県立 石山高校",
+     "station": "石山",
+     "line": "hokurikubiwako",
+     "kind": "公立高校",
+     "start": "8:35",
+     "access": {
+      "type": "徒歩",
+      "min": 10
+     },
+     "hensachi": 68,
+     "arriving_time": 35
+    },
+    {
+     "name": "大阪府立 枚方なぎさ高校",
+     "station": "高槻",
+     "line": "kyoto",
+     "kind": "公立高校",
+     "start": "8:35",
+     "access": {
+      "type": "バス",
+      "min": 30
+     },
+     "hensachi": 46,
+     "arriving_time": 12,
+     "note": "最寄り実質：京阪本線 枚方市駅（バス約15分）/ 京阪交野線 宮之阪駅（約1.3km、徒歩約16分）。"
     },
     {
      "name": "京都府立 城陽高校",
      "station": "城陽",
      "line": "nara",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩10分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
+     "kind": "公立高校",
+     "start": "8:35",
+     "access": {
+      "type": "徒歩",
+      "min": 6
+     },
+     "hensachi": 46,
+     "arriving_time": 50
     },
     {
-     "name": "京都府立 木津高校",
-     "station": "木津",
-     "line": "nara",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "徒歩15分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
+     "name": "大阪府立 島本高校",
+     "station": "島本",
+     "line": "kyoto",
+     "kind": "公立高校",
+     "start": "8:35",
+     "access": {
+      "type": "徒歩",
+      "min": 12
+     },
+     "hensachi": 44,
+     "arriving_time": 22
     },
     {
-     "name": "京都府立 南陽高校",
-     "station": "木津",
+     "name": "滋賀県立 大津高校",
+     "station": "膳所",
+     "line": "hokurikubiwako",
+     "kind": "公立高校",
+     "start": "8:35",
+     "access": {
+      "type": "徒歩",
+      "min": 15
+     },
+     "hensachi": 53,
+     "arriving_time": 39,
+     "note": "最寄り実質：京阪石山坂本線 錦駅（約600m、徒歩約8分）。"
+    },
+    {
+     "name": "京都府立 山城高校",
+     "station": "円町",
+     "line": "sagano",
+     "kind": "公立高校",
+     "start": "8:30",
+     "access": {
+      "type": "徒歩",
+      "min": 8
+     },
+     "hensachi": 62,
+     "arriving_time": 18
+    },
+    {
+     "name": "大阪府立 茨木高校",
+     "station": "茨木",
+     "line": "kyoto",
+     "kind": "公立高校",
+     "start": "8:30",
+     "access": {
+      "type": "徒歩",
+      "min": 13
+     },
+     "hensachi": 72,
+     "arriving_time": 46
+    },
+    {
+     "name": "大阪府立 市岡高校",
+     "station": "大阪",
+     "line": "kyoto",
+     "kind": "公立高校",
+     "start": "8:30",
+     "access": {
+      "type": "徒歩",
+      "min": 25
+     },
+     "hensachi": 61,
+     "arriving_time": 31
+    },
+    {
+     "name": "大阪府立 大手前高校",
+     "station": "大阪",
+     "line": "kyoto",
+     "kind": "公立高校",
+     "start": "8:30",
+     "access": {
+      "type": "徒歩",
+      "min": 25
+     },
+     "hensachi": 72,
+     "arriving_time": 25
+    },
+    {
+     "name": "大阪府立 北野高校",
+     "station": "大阪",
+     "line": "kyoto",
+     "kind": "公立高校",
+     "start": "8:10",
+     "access": {
+      "type": "徒歩",
+      "min": 25
+     },
+     "hensachi": 74,
+     "arriving_time": 40,
+     "note": "最寄り実質：阪急宝塚線・神戸線・京都線 十三駅（約800m、徒歩約10分）。"
+    },
+    {
+     "name": "京都府立 洛東高校",
+     "station": "山科",
+     "line": "hokurikubiwako",
+     "kind": "公立高校",
+     "start": "8:40",
+     "access": {
+      "type": "徒歩",
+      "min": 20
+     },
+     "hensachi": 44,
+     "arriving_time": 14,
+     "note": "最寄り実質：京都市営地下鉄東西線 椥辻駅（約1.1km、徒歩約14分）。"
+    },
+    {
+     "name": "滋賀県立 野洲高校",
+     "station": "野洲",
+     "line": "hokurikubiwako",
+     "kind": "公立高校",
+     "start": "8:35",
+     "access": {
+      "type": "徒歩",
+      "min": 10
+     },
+     "hensachi": 44,
+     "arriving_time": 33
+    },
+    {
+     "name": "京都橘高校",
+     "station": "桃山",
      "line": "nara",
-     "kind": "高校",
-     "start": "8:30〜8:40頃",
-     "access": "バス15分",
-     "am": "7:00-8:30",
-     "pm": "15:30-18:30",
-     "note": "最寄駅・時間はすべて推測。公式情報で要確認"
+     "kind": "私立高校",
+     "start": "8:30",
+     "access": {
+      "type": "徒歩",
+      "min": 15
+     },
+     "hensachi": 58,
+     "arriving_time": 4,
+     "note": "最寄り実質：京阪宇治線 桃山南口駅（約400m、徒歩約5分）/ 近鉄京都線 桃山御陵前駅（約1.1km、徒歩約14分）。"
+    },
+    {
+     "name": "立命館宇治高校",
+     "station": "宇治",
+     "line": "nara",
+     "kind": "私立高校",
+     "start": "8:40",
+     "access": {
+      "type": "バス",
+      "min": 12
+     },
+     "hensachi": 67,
+     "arriving_time": 8,
+     "note": "最寄り実質：近鉄京都線 大久保駅（バス約15分）。"
+    },
+    {
+     "name": "比叡山高校",
+     "station": "比叡山坂本",
+     "line": "kosei",
+     "kind": "私立高校",
+     "start": "8:30",
+     "access": {
+      "type": "徒歩",
+      "min": 20
+     },
+     "hensachi": 48,
+     "arriving_time": 2,
+     "note": "最寄り実質：京阪石山坂本線 坂本比叡山口駅（約700m、徒歩約9分）。"
+    },
+    {
+     "name": "滋賀県立 高島高校",
+     "station": "安曇川",
+     "line": "kosei",
+     "kind": "公立高校",
+     "start": "8:35",
+     "access": {
+      "type": "徒歩",
+      "min": 10
+     },
+     "hensachi": 48,
+     "arriving_time": 7
+    },
+    {
+     "name": "滋賀県立 膳所高校",
+     "station": "膳所",
+     "line": "hokurikubiwako",
+     "kind": "公立高校",
+     "start": "8:35",
+     "access": {
+      "type": "徒歩",
+      "min": 10
+     },
+     "hensachi": 72,
+     "arriving_time": 5,
+     "note": "最寄り実質：京阪石山坂本線 京阪膳所駅（約800m、徒歩約10分）。"
     }
    ]
   }
