@@ -143,7 +143,8 @@ function secPath(a,b){a=D.S[a];b=D.S[b];return a===b?esc(a):esc(a)+' → '+esc(b
 // 同じ列車・同じ時間帯の混雑パターンを1つにまとめる（号車を並べて表示）
 function mergedPats(min){
  const L=Math.min(7,Math.max(4,min)),line=$('line').value,dt=$('dt').value,g={};
- for(const p of D.pat){const m=D.tmeta[p[0]];if(p[3]!==L||!m||!tgOK(isExp(m[1]))||!dirOK(m[3])||(line&&m[0]!==line)||(dt!==''&&p[2]!=dt))continue;
+ for(const p of D.pat){const m=D.tmeta[p[0]];const pl=p[14]!=null&&p[14]>=0?D.L[p[14]]:m?.[0];   // 最も混んだ区間の路線で判定
+  if(p[3]!==L||!m||!tgOK(isExp(m[1]))||!dirOK(m[3])||(line&&pl!==line)||(dt!==''&&p[2]!=dt))continue;
   (g[p[0]+'|'+p[2]]||(g[p[0]+'|'+p[2]]=[])).push(p)}
  const out=[];
  for(const lst of Object.values(g)){lst.sort((a,b)=>a[6]-b[6]);const cl=[];
@@ -152,14 +153,14 @@ function mergedPats(min){
    const cars=[...new Map(ps.sort((a,b)=>a[1]-b[1]).map(p=>[p[1],{car:p[1],days:p[4],mx:p[11]}])).values()];
    const s=Math.min(...ps.map(p=>p[6])),e=Math.max(...ps.map(p=>p[7]));
    if(!hrOK(Math.floor(s/60)))continue;
-   out.push({no:best[0],dty:best[2],L,m,s,e,cars,days:Math.max(...ps.map(p=>p[4])),total:best[5],ss:best[8],es:best[9],ps:best[10],
+   out.push({no:best[0],dty:best[2],L,m,s,e,cars,pl:best[14]!=null&&best[14]>=0?D.L[best[14]]:best[0]&&D.tmeta[best[0]][0],days:Math.max(...ps.map(p=>p[4])),total:best[5],ss:best[8],es:best[9],ps:best[10],
     mx:Math.max(...ps.map(p=>p[11])),avg:best[12],org:best[13]??-1})}}
  return out}
 function patItem(o,i,max,mode){
  const on=orgName(o.org),nt=o.cars.map(c=>noteFor(on,o.m[3],c.car)).filter(Boolean)[0]||'';
  const title=`${esc(o.no)} ${esc(o.m[1])} ${esc(o.m[2])}行　${carList(o.cars)}`;
  const when=`${hm(o.s)}〜${hm(o.e)}　${secPath(o.ss,o.es)}`+(on?`<br>${esc(on)}駅から混雑`:'');
- const sub=`${IDX.lines[o.m[0]]} ${DIR[o.m[3]]??''}・${DT[o.dty]}　最も混む区間 ${esc(D.S[o.ps])}（最大${o.mx}%）`+
+ const sub=`${IDX.lines[o.pl]||IDX.lines[o.m[0]]} ${DIR[o.m[3]]??''}・${DT[o.dty]}　最も混む区間 ${esc(D.S[o.ps])}（最大${o.mx}%）`+
   (o.cars.length>1?`<br>号車別の最大：${o.cars.map(c=>`${c.car}号車 ${c.mx}%`).join('・')}`:'')+(nt?`<br>🚪 ${esc(nt)}`:'');
  return mode==='dur'?item(i,title,when,sub+`・${o.days}/${o.total}日`,`${o.e-o.s}分`,'混雑が続く時間',(o.e-o.s)/max,Math.max(o.L,6),o.no)
   :item(i,title,when,sub,`${o.days}日`,`${o.total}日中 ${Math.round(o.days/o.total*100)}%`,o.days/max,Math.max(o.L,6),o.no)}
@@ -191,8 +192,8 @@ function renderSec(rows,min){
  return '<h2>混雑区間ランキング</h2>'+list.map((o,i)=>item(i,esc(D.S[o.s]),o.when,`${IDX.lines[D.L[o.li]]} ${DIR[o.d]??''}<br>混んだ号車：${o.carsTxt}`+(o.note?`<br>🚪 ${esc(o.note)}`:''),`${o.hit}回`,`${Math.round(o.hit/o.all*100)}%`,o.hit/mx,Math.max(min,6))).join('')}
 function renderTrain(min){
  const line=$('line').value,dt=$('dt').value,g={};
- for(const[no,car,d,hs]of D.trn){const m=D.tmeta[no];if(!m||!tgOK(isExp(m[1]))||!dirOK(m[3]))continue;
-  if(line&&m[0]!==line)continue;if(dt!==''&&d!=dt)continue;if(!hrOK(m[4]))continue;
+ for(const r of D.trn){const[no,li,car,d,hs]=r.length===5?r:[r[0],-1,r[1],r[2],r[3]];const m=D.tmeta[no];if(!m||!tgOK(isExp(m[1]))||!dirOK(m[3]))continue;
+  if(line&&(li>=0?D.L[li]:m[0])!==line)continue;   // その記録の区間の路線で判定if(dt!==''&&d!=dt)continue;if(!hrOK(m[4]))continue;
   const o=g[no]||(g[no]={no,cars:{}});const[a,x]=tally(hs,min);const c=o.cars[car]||(o.cars[car]={hit:0,all:0});c.hit+=x;c.all+=a}
  const list=Object.values(g).map(o=>{const cs=Object.entries(o.cars).filter(([,c])=>c.hit).sort((a,b)=>b[1].hit-a[1].hit);
   return{...o,cs,hit:cs.length?cs[0][1].hit:0,all:cs.length?cs[0][1].all:1}}).filter(o=>o.hit).sort((a,b)=>b.hit-a.hit).slice(0,60);
@@ -201,7 +202,7 @@ function renderTrain(min){
  if(byTime())list.sort((a,b)=>(pm[a.no]?.s??D.tmeta[a.no][4]*60)-(pm[b.no]?.s??D.tmeta[b.no][4]*60));
  return '<h2>混雑列車ランキング</h2>'+list.map((o,i)=>{const m=D.tmeta[o.no],p=pm[o.no];
   return item(i,`${esc(o.no)} ${esc(m[1])} ${esc(m[2])}行`,p?`${hm(p.s)}〜${hm(p.e)}　${secPath(p.ss,p.es)}`+(orgName(p.org)?`<br>${esc(orgName(p.org))}駅から混雑`:''):'',
-   `${IDX.lines[m[0]]} ${DIR[m[3]]??''}<br>混んだ号車：${o.cs.slice(0,6).map(([c,v])=>`${c}号車(${v.hit}回)`).join('・')}`,`${o.hit}回`,`最多の号車 ${Math.round(o.hit/o.all*100)}%`,o.hit/mx,Math.max(min,6),o.no)}).join('')}
+   `${line?IDX.lines[line]:IDX.lines[m[0]]} ${DIR[m[3]]??''}<br>混んだ号車：${o.cs.slice(0,6).map(([c,v])=>`${c}号車(${v.hit}回)`).join('・')}`,`${o.hit}回`,`最多の号車 ${Math.round(o.hit/o.all*100)}%`,o.hit/mx,Math.max(min,6),o.no)}).join('')}
 function render(){
  if(!D)return;const rows=secRows(),min=+$('lv').value;
  renderDist(rows);$('foot').textContent=FOOT[view];
