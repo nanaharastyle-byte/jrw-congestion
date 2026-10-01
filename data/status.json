@@ -1,1 +1,1 @@
-{"last": "2026-10-01 17:51", "trainsWithData": 49, "monitorTrains": 202, "errors": [], "weatherTime": "17:40", "weatherPoints": {"琵琶湖線": ["彦根", "大津"], "JR京都線": ["京都", "大阪"], "奈良線": ["京都", "京田辺"], "嵯峨野線": ["京都", "園部"], "湖西線": ["大津", "南小松", "今津"]}, "trafficNow": {}}
+{"last": "2026-10-01 18:01", "trainsWithData": 56, "monitorTrains": 203, "errors": [], "weatherTime": "17:50", "weatherPoints": {"琵琶湖線": ["彦根", "大津"], "JR京都線": ["京都", "大阪"], "奈良線": ["京都", "京田辺"], "嵯峨野線": ["京都", "園部"], "湖西線": ["大津", "南小松", "今津"]}, "trafficNow": {"kinokuni": {"status": "一部列車遅延", "cause": "信号の確認"}}}
