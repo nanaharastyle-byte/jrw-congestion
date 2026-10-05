@@ -1,12 +1,12 @@
 {
- "1657H": [
+ "1663H": [
   {
    "cars": [
     {
      "carNo": 1,
      "status": 1,
-     "congestion": 43,
-     "temp": 21,
+     "congestion": 9,
+     "temp": 24,
      "facilities": [
       1,
       2,
@@ -17,8 +17,8 @@
     {
      "carNo": 2,
      "status": 1,
-     "congestion": 14,
-     "temp": 22,
+     "congestion": 2,
+     "temp": 25,
      "facilities": [],
      "types": [
       3
@@ -27,16 +27,16 @@
     {
      "carNo": 3,
      "status": 1,
-     "congestion": 32,
-     "temp": 22,
+     "congestion": 1,
+     "temp": 24,
      "facilities": [],
      "types": []
     },
     {
      "carNo": 4,
      "status": 1,
-     "congestion": 48,
-     "temp": 22,
+     "congestion": 1,
+     "temp": 24,
      "facilities": [
       1,
       2
