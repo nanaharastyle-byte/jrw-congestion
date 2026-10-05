@@ -74,11 +74,20 @@ label.f{font-size:12px;color:var(--sub);display:block}
 .pbtn{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .pbtn button{flex:1;border:1px solid var(--acc);background:transparent;color:var(--acc);border-radius:8px;padding:6px 4px;font-size:13px;font-weight:700}
 .pbtn button[aria-pressed=true]{background:var(--acc);color:#fff}
+.favbar{display:flex;gap:6px;margin-top:8px}.favbar button{flex:1;border:1px solid var(--acc);background:transparent;color:var(--acc);border-radius:8px;padding:8px 4px;font-size:13px;font-weight:700}
+.fav{border-bottom:1px solid var(--rule);padding:8px 0}.fav .nm{font-weight:700}.fav .ops{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.fav .ops button{border:1px solid var(--rule);background:var(--bg);color:var(--ink);border-radius:6px;padding:4px 10px;font-size:13px}.fav .ops button.run{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:700}
+.fav pre{white-space:pre-wrap;font-size:11px;color:var(--sub);margin:4px 0 0;font-family:inherit}
+.savebtn{margin-top:6px;border:1px solid var(--acc);background:transparent;color:var(--acc);border-radius:6px;padding:4px 10px;font-size:13px;font-weight:700}
 input[type=number]{width:100%;font-size:14px;padding:5px;border-radius:6px;border:1px solid var(--rule);background:var(--bg);color:var(--ink)}
 </style></head><body>
 <nav><a href="index.html">統計</a><a href="weather.html">天気</a><a href="predict.html">予測</a><a href="monitor.html">在線</a><a href="timetable.html">時刻表</a><a href="patrol.html" aria-current="page">巡回</a></nav>
 <header>
  <h1>混雑列車 巡回ルート</h1><div class="meta" id="meta">読み込み中…</div>
+ <details class="pick" id="favbox"><summary>★ お気に入り<span id="favcount"></span></summary>
+  <input type="search" id="favq" placeholder="お気に入りを絞り込み（駅名・名前など）" style="width:100%;margin-top:6px;font-size:14px;padding:6px;border-radius:6px;border:1px solid var(--rule);background:var(--bg);color:var(--ink)">
+  <div id="favlist"></div>
+ </details>
  <div class="grid">
   <div><label class="f" for="dty">曜日</label><select id="dty"><option value="0">平日</option><option value="1">土休日</option></select></div>
   <div><label class="f" for="mode">ルートの決め方</label><select id="mode"><option value="auto">自動で算出</option><option value="manual">駅を指定して算出</option></select></div>
@@ -109,6 +118,7 @@ input[type=number]{width:100%;font-size:14px;padding:5px;border-radius:6px;borde
   <div class="pbtn"><button type="button" id="partial" aria-pressed="true">一部の学校を通れなくても可</button><button type="button" id="pclear">選択を解除</button></div>
  </details>
  <button class="go" id="go">ルートを計算</button>
+ <div class="favbar"><button type="button" id="favsave">★ この条件をお気に入りに登録</button></div>
 </header>
 <main>
  <div id="out"></div>
@@ -332,7 +342,9 @@ function suggestions(res,mode,ri){
  }
  return out.join('')}
 // ===== 表示 =====
+let ROUTES=[];   // 表示中のルート（お気に入り保存用）
 function routeHtml(res,r,title){
+ const ri=ROUTES.push({res,r,title})-1;
  const ctx=res.ctx,ride=r.legs.reduce((a,l)=>a+l.arr-l.dep,0),wait=r.legs.reduce((a,l)=>a+l.wait,0),first=r.legs[0],last=r.legs.at(-1);
  const secs=r.legs.reduce((a,l)=>a+l.secs,0),mins=r.legs.reduce((a,l)=>a+l.mins,0),total=last.arr-first.dep;
  let h=`<h2>${title}</h2><div class="card sum">${esc(P.S[first.from])} <b>${hm(first.dep)}</b> 発 → ${esc(P.S[last.to])} <b>${hm(last.arr)}</b> 着<br>
@@ -348,6 +360,7 @@ function routeHtml(res,r,title){
    <div>混雑する号車：<b>${l.hot.length?l.hot.join('・')+'号車':(l.car?l.car+'号車（最も混みやすい）':'記録なし')}</b></div>
    ${l.sch?.length?`<div class="sub">🎒 通学時間に重なる：${esc(l.sch.join('、'))}</div>`:''}
    <div class="sub">${LVN[ctx.L]}になる確率 最大${Math.round(l.peak*100)}%・混雑した状態 約${Math.round(l.mins)}分／観測 発${l.dn||'推定'}${l.dn?'日':''}・着${l.an||'推定'}${l.an?'日':''}</div>${nt?`<div class="sub">🚪 ${esc(nt)}</div>`:''}</div>`});
+ h+=`<button class="savebtn" data-ri="${ri}">★ このルートをお気に入りに保存</button>`;
  return h}
 function schoolLine(r){
  const sel=pickedSchools(),cov=r.cov||new Set();if(!cov.size&&!sel.size)return'';
@@ -373,7 +386,7 @@ function run(){
    for(const e of evs)runs.push([solve(e),EVN[e]+tag,e])}
   const single=runs.length===1;
   if(runs.every(r=>r[0].msg)){$('out').innerHTML=`<div class="empty">${runs[0][0].msg}</div>`+($('ev').value==='school'?schoolList():'');bind();return}
-  let h='';
+  let h='';ROUTES=[];
   for(const[res,label,e]of runs){
    if(res.msg){h+=`<h2>${label}</h2><div class="empty">${res.msg}</div>`;continue}
    if(res.note)h+=`<div class="relax">${res.note}</div>`;
@@ -387,9 +400,53 @@ function run(){
  },30);
 }
 function bind(){
+ $('out').querySelectorAll('.savebtn').forEach(b=>b.onclick=()=>addFav(ROUTES[+b.dataset.ri]));
  $('out').querySelectorAll('.tlink').forEach(b=>b.onclick=()=>showTrend(b.dataset.no,b.dataset.title));
  $('out').querySelectorAll('.sug button').forEach(b=>b.onclick=()=>{const sel=$('vias').querySelectorAll('select')[+b.dataset.vi];if(sel){sel.value=b.dataset.st;run()}});
 }
+
+// ===== お気に入り（この端末のブラウザに保存） =====
+const FKEY='jrw-patrol-favorites';
+function favs(){try{return JSON.parse(localStorage.getItem(FKEY)||'[]')}catch(e){return[]}}
+function saveFavs(a){try{localStorage.setItem(FKEY,JSON.stringify(a));return true}catch(e){alert('この端末には保存できませんでした');return false}}
+const IDS=['dty','mode','t0','t1','ext','extmin','ev','xs','lv','xf','tg','shift','from','to','atp'];
+function getState(){
+ const st={};for(const id of IDS){const el=$(id);st[id]=el.type==='checkbox'?el.checked:el.value}
+ st.vias=viaNames();st.lines=[...selLines()];st.schools=[...pickedSchools()];st.pp=PP;st.partial=PARTIAL;return st}
+function setState(st){
+ $('lines').querySelectorAll('input').forEach(i=>i.checked=(st.lines||[]).includes(i.value));
+ fillStations();
+ for(const id of IDS){const el=$(id);if(st[id]===undefined)continue;if(el.type==='checkbox')el.checked=!!st[id];else el.value=st[id]}
+ $('extmin').disabled=!$('ext').checked;$('viabox').classList.toggle('hide',$('mode').value!=='manual');
+ $('vias').innerHTML='';for(const v of st.vias||[])addVia(v);
+ $('from').innerHTML=stationOptions(st.from);$('to').innerHTML=stationOptions(st.to);
+ fillPick();$('plist').querySelectorAll('input').forEach(i=>i.checked=(st.schools||[]).includes(i.value));$('plist').onchange();
+ PP=st.pp||'pass';document.querySelectorAll('[data-pp]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.pp===PP));
+ PARTIAL=st.partial!==false;$('partial').setAttribute('aria-pressed',PARTIAL);
+ renderSchools();renderInc()}
+function autoName(st){const ev={eff:'効率',peak:'最大混雑率',time:'混雑時間',sec:'混雑区間',school:'通学',all:'3種'}[st.ev]||'';
+ return `${st.dty==='1'?'土休日':'平日'} ${st.from}${st.mode==='manual'&&st.vias?.length?'→'+st.vias.join('→'):''}→${st.to} ${st.t0}〜${st.t1}（${ev}）`}
+function routeText(res,r){return r.legs.map(l=>{const tr=res.ctx.trs[l.ti];
+ return `${hm(l.dep)} ${P.S[l.from]} → ${hm(l.arr)} ${P.S[l.to]}　${tr[0]} ${tr[1]} ${tr[2]}行${l.exp>=0?`・最大${l.exp}%`:''}${l.hot?.length?`（${l.hot.join('・')}号車）`:''}`}).join('\n')}
+function addFav(route){
+ const st=getState(),def=route?route.title+'：'+autoName(st):autoName(st);
+ const name=prompt('お気に入りの名前',def);if(name===null)return;
+ const a=favs();a.unshift({id:Date.now(),name:name||def,state:st,saved:new Date().toISOString().slice(0,16).replace('T',' '),
+  route:route?routeText(route.res,route.r):null});
+ if(saveFavs(a))renderFavs()}
+function renderFavs(){
+ const q=($('favq').value||'').trim(),a=favs();
+ $('favcount').textContent=a.length?`（${a.length}件）`:'';
+ const list=a.filter(f=>!q||(f.name+' '+(f.route||'')+' '+JSON.stringify(f.state)).includes(q));
+ $('favlist').innerHTML=list.length?list.map(f=>`<div class="fav"><div class="nm">${esc(f.name)}</div><div class="sub">${esc(autoName(f.state))}・登録 ${esc(f.saved)}</div>
+  ${f.route?`<pre>${esc(f.route)}</pre>`:''}<div class="ops"><button class="run" data-id="${f.id}">この条件で検索</button><button data-ren="${f.id}">名前を変更</button><button data-del="${f.id}">削除</button></div></div>`).join('')
+  :`<div class="sub" style="padding:8px 0">${a.length?'該当するお気に入りはありません':'まだお気に入りはありません。条件を決めて「★ この条件をお気に入りに登録」を押してください。'}</div>`;
+ $('favlist').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{const f=favs().find(x=>x.id==b.dataset.id);if(!f)return;setState(f.state);$('favbox').open=false;run();window.scrollTo({top:$('out').offsetTop-20,behavior:'smooth'})});
+ $('favlist').querySelectorAll('[data-ren]').forEach(b=>b.onclick=()=>{const a=favs(),f=a.find(x=>x.id==b.dataset.ren);if(!f)return;const n=prompt('新しい名前',f.name);if(n){f.name=n;saveFavs(a);renderFavs()}});
+ $('favlist').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(!confirm('このお気に入りを削除しますか？'))return;saveFavs(favs().filter(x=>x.id!=b.dataset.del));renderFavs()});
+}
+$('favsave').onclick=()=>addFav(null);
+$('favq').oninput=renderFavs;
 $('go').onclick=run;
-init();
+init().then(renderFavs);
 </script></body></html>
