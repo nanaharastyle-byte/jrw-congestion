@@ -1,37 +1,53 @@
 {
- "263C": [
+ "1002M": [
   {
    "cars": [
     {
      "carNo": 1,
      "status": 1,
-     "congestion": 46,
-     "temp": 21,
-     "facilities": [
-      1,
-      2
-     ],
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
      "types": []
     },
     {
      "carNo": 2,
      "status": 1,
-     "congestion": 35,
-     "temp": 21,
+     "congestion": -1,
+     "temp": -1,
      "facilities": [],
-     "types": [
-      3
-     ]
+     "types": []
     },
     {
      "carNo": 3,
      "status": 1,
-     "congestion": 24,
-     "temp": 21,
-     "facilities": [
-      1,
-      2
-     ],
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 4,
+     "status": 1,
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 5,
+     "status": 1,
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 6,
+     "status": 1,
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
      "types": []
     }
    ]
@@ -39,44 +55,37 @@
   {
    "cars": [
     {
-     "carNo": 4,
+     "carNo": 7,
      "status": 1,
      "congestion": 16,
-     "temp": 21,
+     "temp": 20,
      "facilities": [
-      1,
-      2
+      3,
+      4,
+      5
      ],
      "types": []
     },
     {
-     "carNo": 5,
+     "carNo": 8,
      "status": 1,
-     "congestion": 0,
-     "temp": 22,
-     "facilities": [],
-     "types": [
-      4
-     ]
-    },
-    {
-     "carNo": 6,
-     "status": 1,
-     "congestion": 16,
-     "temp": 21,
-     "facilities": [],
-     "types": [
-      3
-     ]
-    },
-    {
-     "carNo": 7,
-     "status": 1,
-     "congestion": 31,
-     "temp": 22,
+     "congestion": 51,
+     "temp": 20,
      "facilities": [
-      1,
-      2
+      3,
+      4,
+      5
+     ],
+     "types": []
+    },
+    {
+     "carNo": 9,
+     "status": 1,
+     "congestion": 45,
+     "temp": 20,
+     "facilities": [
+      3,
+      5
      ],
      "types": []
     }
