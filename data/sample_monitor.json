@@ -1,95 +1,66 @@
 {
- "1303": [
+ "100C": [
   {
    "cars": [
     {
-     "carNo": 1,
+     "carNo": 7,
      "status": 1,
-     "congestion": 0,
-     "temp": 23,
-     "facilities": [
-      1,
-      2
-     ],
-     "types": []
-    },
-    {
-     "carNo": 2,
-     "status": 1,
-     "congestion": 0,
-     "temp": 24,
-     "facilities": [
-      1,
-      2
-     ],
-     "types": [
-      3
-     ]
-    },
-    {
-     "carNo": 3,
-     "status": 1,
-     "congestion": 0,
-     "temp": 24,
-     "facilities": [
-      1,
-      2
-     ],
-     "types": []
-    },
-    {
-     "carNo": 4,
-     "status": 1,
-     "congestion": 0,
-     "temp": 24,
-     "facilities": [
-      1,
-      2
-     ],
-     "types": [
-      4
-     ]
-    },
-    {
-     "carNo": 5,
-     "status": 1,
-     "congestion": 0,
+     "congestion": 13,
      "temp": 22,
-     "facilities": [
-      1,
-      2
-     ],
+     "facilities": [],
      "types": []
     },
     {
      "carNo": 6,
      "status": 1,
-     "congestion": 0,
-     "temp": 23,
-     "facilities": [
-      1,
-      2
-     ],
-     "types": []
-    },
-    {
-     "carNo": 7,
-     "status": 1,
-     "congestion": 0,
-     "temp": 23,
-     "facilities": [
-      1,
-      2
-     ],
+     "congestion": 15,
+     "temp": 22,
+     "facilities": [],
      "types": [
       3
      ]
     },
     {
-     "carNo": 8,
+     "carNo": 5,
      "status": 1,
-     "congestion": 0,
+     "congestion": 7,
      "temp": 22,
+     "facilities": [],
+     "types": [
+      4
+     ]
+    },
+    {
+     "carNo": 4,
+     "status": 1,
+     "congestion": 11,
+     "temp": 21,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 3,
+     "status": 1,
+     "congestion": 6,
+     "temp": 21,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 2,
+     "status": 1,
+     "congestion": 9,
+     "temp": 22,
+     "facilities": [],
+     "types": [
+      3
+     ]
+    },
+    {
+     "carNo": 1,
+     "status": 1,
+     "congestion": 10,
+     "temp": 21,
      "facilities": [
       1,
       2
