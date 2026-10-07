@@ -1,41 +1,39 @@
 {
- "4047M": [
+ "1303": [
   {
    "cars": [
     {
      "carNo": 1,
      "status": 1,
-     "congestion": 42,
-     "temp": 20,
+     "congestion": 1,
+     "temp": 23,
      "facilities": [
-      3,
-      4,
-      5
-     ],
-     "types": [
+      1,
       2
-     ]
+     ],
+     "types": []
     },
     {
      "carNo": 2,
      "status": 1,
      "congestion": 0,
-     "temp": 21,
+     "temp": 22,
      "facilities": [
-      3,
-      4,
-      5
+      1,
+      2
      ],
-     "types": []
+     "types": [
+      3
+     ]
     },
     {
      "carNo": 3,
      "status": 1,
-     "congestion": 25,
-     "temp": 20,
+     "congestion": 0,
+     "temp": 22,
      "facilities": [
-      3,
-      5
+      1,
+      2
      ],
      "types": []
     },
@@ -43,23 +41,23 @@
      "carNo": 4,
      "status": 1,
      "congestion": 0,
-     "temp": 20,
+     "temp": 23,
      "facilities": [
       1,
-      3,
-      4,
-      5
+      2
      ],
-     "types": []
+     "types": [
+      4
+     ]
     },
     {
      "carNo": 5,
      "status": 1,
-     "congestion": 2,
-     "temp": 21,
+     "congestion": 0,
+     "temp": 22,
      "facilities": [
-      3,
-      5
+      1,
+      2
      ],
      "types": []
     },
@@ -67,11 +65,10 @@
      "carNo": 6,
      "status": 1,
      "congestion": 0,
-     "temp": 21,
+     "temp": 23,
      "facilities": [
-      3,
-      4,
-      5
+      1,
+      2
      ],
      "types": []
     },
@@ -79,34 +76,23 @@
      "carNo": 7,
      "status": 1,
      "congestion": 0,
-     "temp": 20,
+     "temp": 23,
      "facilities": [
-      3,
-      4,
-      5
+      1,
+      2
      ],
-     "types": []
+     "types": [
+      3
+     ]
     },
     {
      "carNo": 8,
      "status": 1,
-     "congestion": 3,
-     "temp": 21,
-     "facilities": [
-      3,
-      4,
-      5
-     ],
-     "types": []
-    },
-    {
-     "carNo": 9,
-     "status": 1,
      "congestion": 0,
-     "temp": 21,
+     "temp": 22,
      "facilities": [
-      3,
-      5
+      1,
+      2
      ],
      "types": []
     }
