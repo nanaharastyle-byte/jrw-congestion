@@ -26,6 +26,10 @@
   .tr-dl{color:#fff;background:#c23b22;border-radius:3px;padding:0 4px;font-weight:700;font-size:10px;white-space:nowrap}
   .tr-tbl tr.gap td{background:transparent;font-size:10px}
   .tr-tbl tr.tr-st{cursor:pointer}.tr-tbl tr.tr-st td:first-child u{color:var(--acc,#0072bc)}
+  .tr-nav{display:flex;gap:6px;align-items:center;margin:2px 0 6px}
+  .tr-nav button{flex:1;min-width:0;padding:8px 4px;border:1px solid var(--rule,#d5dce6);border-radius:8px;background:var(--bg,#eef2f6);color:inherit;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tr-nav button:disabled{opacity:.4}.tr-nav select{flex:0 0 auto;max-width:34%;margin:0}
+  .tr-opt{font-size:12px;color:var(--sub,#5b6577);display:flex;gap:4px;align-items:center;margin:0 0 4px}
   .tr-save{width:100%;margin-top:8px;padding:9px;border:0;border-radius:8px;background:var(--acc,#0072bc);color:#fff;font-weight:700;font-size:14px}`;
   document.head.appendChild(css);
 
@@ -168,19 +172,69 @@
         const l = lvOf(p, T); return `<td style="background:var(--l${l});color:${l === 1 || l === 4 ? '#1a2230' : '#fff'}" title="${SHORT[l]}">${p}</td>`;
       }).join('') + '</tr>';
     }
-    return h + '</table></div><div class="tr-sub">☆の付いた駅の行をタップすると、その駅・時刻・列車をお気に入りに登録できます（巡回ルートの経由点に使えます）。<br>数字は乗車率(%)。同じ駅・区間に複数の記録があるときは最も高い値。赤の「遅」はその区間での遅れ。「記録なし」はその駅で位置が記録されなかった（短時間で通過した等）ことを示します。</div>';
+    return h + '</table></div><div class="tr-sub">☆の付いた駅の行をタップすると、その駅・時刻・列車をお気に入りに登録できます（巡回ルートの経由点に使えます）。<br>上の「一本前／一本後」は、選んだ駅を同じ方向に発車する前後の列車（実測の時刻表で、混雑データのある列車）に切り替えます。<br>数字は乗車率(%)。同じ駅・区間に複数の記録があるときは最も高い値。赤の「遅」はその区間での遅れ。「記録なし」はその駅で位置が記録されなかった（短時間で通過した等）ことを示します。</div>';
   }
-  window.showTrend = async function (no, title) {
+  // ===== 一本前・一本後（基準駅の実測時刻表で、同じ方向の前後の列車を探す） =====
+  const TTC = {};
+  const ttOf = line => TTC[line] || (TTC[line] = fetch(`stats/timetable_${line}.json`, { cache: 'no-store' }).then(r => r.json()).catch(() => null));
+  const toMin = t => { const [h, m] = String(t).split(':').map(Number); return h * 60 + m; };
+  const hmm = m => Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0');
+  const SAME = 'jrw-trend-sametype';
+  async function neighbors(src, rows, i, no) {
+    const line = lineOf(rows, i), st = names(rows[i][1])[0];
+    const tt = line && await ttOf(line); if (!tt) return null;
+    const d = new Date((src.date || '') + 'T12:00:00+09:00'), we = d.getDay() === 0 || d.getDay() === 6 ? '1' : '0';
+    const list = (tt.tt?.[we]?.[st]?.[String(src.dir)] || tt.tt?.[we === '1' ? '0' : '1']?.[st]?.[String(src.dir)] || []);
+    if (!list.length) return null;
+    let pos = list.findIndex(r => r[1] === no);
+    const t = toMin(rows[i][0]);
+    const ok = r => r[1] !== no && (r[10] || []).length && (!localStorage.getItem(SAME) || r[2] === src.typ);
+    let prev = null, next = null;
+    if (pos >= 0) {
+      for (let k = pos - 1; k >= 0 && !prev; k--) if (ok(list[k])) prev = list[k];
+      for (let k = pos + 1; k < list.length && !next; k++) if (ok(list[k])) next = list[k];
+    } else {                                                        // 時刻表に無い列車は、この駅にいた時刻の前後で探す
+      for (let k = list.length - 1; k >= 0 && !prev; k--) if (list[k][0] < t && ok(list[k])) prev = list[k];
+      for (let k = 0; k < list.length && !next; k++) if (list[k][0] > t && ok(list[k])) next = list[k];
+    }
+    return { st, prev, next };
+  }
+  window.showTrend = function (no, title, opt) {
     const ov = document.createElement('div'); ov.className = 'tr-ov';
-    ov.innerHTML = `<div class="tr-box" role="dialog" aria-label="号車別の混雑推移"><div class="tr-head"><h3>${esc(title || no)}</h3><button class="tr-x" aria-label="閉じる">×</button></div><div class="tr-body"><div class="tr-sub">読み込み中…</div></div></div>`;
+    ov.innerHTML = `<div class="tr-box" role="dialog" aria-label="号車別の混雑推移"><div class="tr-head"><h3></h3><button class="tr-x" aria-label="閉じる">×</button></div><div class="tr-body"></div></div>`;
     document.body.appendChild(ov);
     ov.onclick = e => { if (e.target === ov) ov.remove(); };
     ov.querySelector('.tr-x').onclick = () => ov.remove();
-    const [T, list] = await Promise.all([getT(), sources(no)]);
+    load(ov, no, title, opt || {});
+  };
+  async function load(ov, no, title, opt) {
+    ov.querySelector('h3').textContent = title || no;
     const body = ov.querySelector('.tr-body');
+    body.innerHTML = '<div class="tr-sub">読み込み中…</div>';
+    const [T, list] = await Promise.all([getT(), sources(no)]);
     if (!list.length) { body.innerHTML = '<div class="tr-sub">この列車の記録が見つかりませんでした</div>'; return; }
-    body.innerHTML = `<select class="tr-sel" aria-label="日付">${list.map((s, i) => `<option value="${i}">${esc(s.label)}</option>`).join('')}</select><div class="tr-view"></div>`;
-    const sel = body.querySelector('.tr-sel'), view = body.querySelector('.tr-view');
+    const di = Math.max(0, list.findIndex(s => s.date === opt.date));
+    body.innerHTML = `<select class="tr-sel" aria-label="日付">${list.map((s, i) => `<option value="${i}"${i === di ? ' selected' : ''}>${esc(s.label)}</option>`).join('')}</select>
+      <div class="tr-nav"><button class="tr-pv" disabled>◀ 一本前</button><select class="tr-sel tr-bs" aria-label="基準駅"></select><button class="tr-nx" disabled>一本後 ▶</button></div>
+      <label class="tr-opt"><input type="checkbox" class="tr-same"${localStorage.getItem(SAME) ? ' checked' : ''}>同じ種別だけで前後を探す</label><div class="tr-view"></div>`;
+    const sel = body.querySelector('.tr-sel'), view = body.querySelector('.tr-view'), bs = body.querySelector('.tr-bs');
+    const pv = body.querySelector('.tr-pv'), nx = body.querySelector('.tr-nx'), same = body.querySelector('.tr-same');
+    let station = nrm(opt.station || ''), seq = 0;
+    const nav = async () => {
+      const src = list[+sel.value], rows = fillGaps(src.rows), my = ++seq;
+      const sts = rows.map((r, i) => [r, i]).filter(([r]) => r[3] && String(r[1]).endsWith('駅'));
+      if (!sts.some(([r]) => names(r[1])[0] === station)) station = sts.length ? names(sts[0][0][1])[0] : '';
+      bs.innerHTML = sts.map(([r]) => names(r[1])[0]).map(n => `<option${n === station ? ' selected' : ''}>${esc(n)}</option>`).join('');
+      pv.disabled = nx.disabled = true; pv.textContent = '◀ 一本前'; nx.textContent = '一本後 ▶';
+      const hit = sts.find(([r]) => names(r[1])[0] === station);
+      const nb = hit && await neighbors(src, rows, hit[1], no).catch(() => null);
+      if (my !== seq) return;
+      const go = r => () => load(ov, r[1], `${r[1]} ${r[2]} ${r[3]}行`, { station, date: src.date });
+      if (nb?.prev) { pv.disabled = false; pv.textContent = `◀ ${hmm(nb.prev[0])} ${nb.prev[2]}`; pv.onclick = go(nb.prev); }
+      if (nb?.next) { nx.disabled = false; nx.textContent = `${hmm(nb.next[0])} ${nb.next[2]} ▶`; nx.onclick = go(nb.next); }
+    };
+    bs.onchange = () => { station = bs.value; nav(); };
+    same.onchange = () => { try { same.checked ? localStorage.setItem(SAME, '1') : localStorage.removeItem(SAME); } catch (e) { } nav(); };
     const show = () => {
       const src = list[+sel.value];
       view.innerHTML = table(src, T, no);
@@ -192,7 +246,9 @@
         favDialog({ line: ln, lineName: (LINE_ST[ln] || [''])[0], station: st, time: String(r[0]).slice(0, 5), dir: String(src.dir ?? ''),
           dirName: src.dir == 0 ? '上り' : src.dir == 1 ? '下り' : '', no, typ: src.typ, dest: src.dest, max: mx, cars: hot, date: src.date || '' });
       });
+      nav();
     };
     sel.onchange = show; show();
-  };
+    ov.querySelector('.tr-box').scrollTop = 0;
+  }
 })();
