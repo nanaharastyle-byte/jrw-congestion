@@ -179,7 +179,7 @@ def main():
             if not recent[no]["rows"]:
                 del recent[no]
         out = {"t": now.strftime("%Y-%m-%d %H:%M:%S"),
-               "trains": {no: {"typ": v["typ"], "dest": v["dest"], "rows": [x[1:] for x in v["rows"]]}
+               "trains": {no: {"typ": v["typ"], "dest": v["dest"], "dir": v.get("dir"), "rows": [x[1:] for x in v["rows"]]}
                           for no, v in recent.items()}}
         with open(f"{WORK}/recent.json", "w", encoding="utf-8") as f:
             json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
@@ -223,7 +223,7 @@ def main():
                         last[r[2]] = (k, start)
                         total += 1
                         if r[8]:
-                            recent.setdefault(r[2], {"typ": r[3], "dest": r[4], "rows": []})["rows"].append(
+                            recent.setdefault(r[2], {"typ": r[3], "dest": r[4], "dir": r[5], "rows": []})["rows"].append(
                                 [start, r[0], r[6], r[8], r[7]])
                 if data["lines"]:
                     with open(f"{WORK}/latest.json", "w", encoding="utf-8") as f:
