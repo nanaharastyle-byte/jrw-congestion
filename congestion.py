@@ -982,7 +982,7 @@ def trainlogs(dates, keep=14):
                 for c, p in r[9]:
                     row[3][c] = max(row[3].get(c, -1), p)
             lg = logs.setdefault(no, {"typ": obs[0][4], "dest": obs[0][5], "days": {}})
-            lg["days"][ds] = {"typ": obs[0][4], "dest": obs[0][5],
+            lg["days"][ds] = {"typ": obs[0][4], "dest": obs[0][5], "dir": obs[0][6],
                               "rows": [[t, sec, dl, sorted(cs.items())] for t, sec, dl, cs in rows]}
     return logs
 
@@ -1063,7 +1063,7 @@ def report(now):
                      ("monitor.html", "monitor.html"), ("patrol.html", "patrol.html"),
                      ("schools.json", "stats/schools.json"), ("station_notes.json", "stats/station_notes.json"),
                      ("incidents.json", "stats/incidents.json"), ("timetable.html", "timetable.html"),
-                     ("trend.js", "trend.js")):
+                     ("trend.js", "trend.js"), ("prefs.js", "prefs.js")):
         if os.path.exists(os.path.join(here, src)):
             shutil.copy(os.path.join(here, src), f"{SITE}/{dst}")
     with open("data/last_publish.txt", "w") as f:
