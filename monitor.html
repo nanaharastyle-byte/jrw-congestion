@@ -181,4 +181,5 @@ async function load(){
 ['sort','dir','tg','onlyData','onlyDelay'].forEach(id=>$(id).onchange=render);
 $('out').addEventListener('click',e=>{const el=e.target.closest('[data-no]');if(el&&window.showTrend)showTrend(el.dataset.no,el.dataset.title)});
 load();
-</script></body></html>
+</script><script src="prefs.js"></script>
+</body></html>
