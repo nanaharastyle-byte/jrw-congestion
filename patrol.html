@@ -458,7 +458,7 @@ function routeHtml(res,r,title){
   else if(l.wait>0)h+=`<div class="wait">${esc(P.S[l.from])}で ${l.wait}分待ち</div>`;
   const nt=l.car&&noteFor(P.S[l.from],tr[3],l.car);
   const fp=(r.pts||[]).filter(p=>p.no===tr[0]&&p.t>=l.dep&&p.t<=l.arr).map(p=>`★ ${p.station}駅 ${hm(p.t)}`);
-  h+=`<div class="leg${l.secs<.5?' cool':''}"><div class="t">${i+1}. <button class="tlink" data-no="${esc(tr[0])}" data-title="${esc(tr[0]+' '+tr[1]+' '+tr[2]+'行')}">${hm(l.dep)}</button> ${esc(P.S[l.from])}${dots(P.S[l.from])} → ${hm(l.arr)} ${esc(P.S[l.to])}${dots(P.S[l.to])}（${l.arr-l.dep}分）</div>
+  h+=`<div class="leg${l.secs<.5?' cool':''}"><div class="t">${i+1}. <button class="tlink" data-no="${esc(tr[0])}" data-st="${esc(P.S[l.from])}" data-title="${esc(tr[0]+' '+tr[1]+' '+tr[2]+'行')}">${hm(l.dep)}</button> ${esc(P.S[l.from])}${dots(P.S[l.from])} → ${hm(l.arr)} ${esc(P.S[l.to])}${dots(P.S[l.to])}（${l.arr-l.dep}分）</div>
    ${l.fill?`<div class="fillnote">⚠ 補完されたルート：${l.fill}</div>`:''}${fp.length?`<div class="favmark">${esc(fp.join('・'))}（お気に入り）</div>`:''}
    <div>${esc(tr[0])} ${esc(tr[1])} ${esc(tr[2])}行${ln?`（${LN[ln]||ln}）`:''}</div>
    ${l.exp>=0?`<div>期待できる最大混雑率 <b>${l.exp}%</b>${l.expCar?`（${l.expCar}号車）`:''}</div>`:''}
@@ -513,7 +513,7 @@ function run(){
 function bind(){
  $('out').querySelectorAll('.sdot').forEach(b=>b.onclick=e=>{e.stopPropagation();showSchool(b.dataset.sch)});
  $('out').querySelectorAll('.savebtn').forEach(b=>b.onclick=()=>addFav(ROUTES[+b.dataset.ri]));
- $('out').querySelectorAll('.tlink').forEach(b=>b.onclick=()=>showTrend(b.dataset.no,b.dataset.title));
+ $('out').querySelectorAll('.tlink').forEach(b=>b.onclick=()=>showTrend(b.dataset.no,b.dataset.title,{station:b.dataset.st}));
  $('out').querySelectorAll('.sug button').forEach(b=>b.onclick=()=>{const sel=$('vias').querySelectorAll('select')[+b.dataset.vi];if(sel){sel.value=b.dataset.st;run()}});
 }
 
