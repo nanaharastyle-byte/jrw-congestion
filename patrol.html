@@ -76,6 +76,10 @@ label.f{font-size:12px;color:var(--sub);display:block}
 .pbtn button[aria-pressed=true]{background:var(--acc);color:#fff}
 .fpg{font-weight:700;margin-top:6px}.fpi{padding-left:18px}.fpdel{margin-left:auto;border:0;background:none;color:var(--sub);font-size:12px}
 .fillnote{background:#fde8e4;color:#7a1d0e;border-radius:6px;padding:6px 8px;font-size:12px;margin:4px 0}
+.sdot{border:0;background:none;padding:0 1px;font-size:13px;line-height:1;cursor:pointer;vertical-align:1px}
+.spop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:70;display:flex;align-items:center;justify-content:center;padding:20px}
+.spop .bx{background:var(--paper);color:var(--ink);border-radius:12px;padding:14px;max-width:340px;width:100%}
+.spop .bx h3{margin:0 0 6px;font-size:16px}.spop .bx button{margin-top:10px;width:100%;padding:8px;border:0;border-radius:8px;background:var(--acc);color:#fff;font-weight:700}
 .favmark{font-size:12px;color:#b06b00;font-weight:700}
 .favbar{display:flex;gap:6px;margin-top:8px}.favbar button{flex:1;border:1px solid var(--acc);background:transparent;color:var(--acc);border-radius:8px;padding:8px 4px;font-size:13px;font-weight:700}
 .fav{border-bottom:1px solid var(--rule);padding:8px 0}.fav .nm{font-weight:700}.fav .ops{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
@@ -131,7 +135,7 @@ input[type=number]{width:100%;font-size:14px;padding:5px;border-radius:6px;borde
  <div id="out"></div>
  <div id="incidents"></div>
  <div id="schools"></div>
- <p class="note">・ダイヤは公式時刻表ではなく、過去の記録で各列車が各駅にいた時刻の中央値（実測ダイヤ）です。数分ずれることがあるため、実際の巡回前に公式時刻表で確認してください。<br>・乗り降りできる駅は種別ごとの停車駅一覧で判定しています。嵯峨野線・奈良線の京都駅のように、JRのデータに表示されない停車駅の時刻は前後の駅から推定しています（「推定」と表示）。<br>・「効率優先」は待ち時間を強く減らして、混雑列車に乗っている時間を最大にします。同じ区間を行き来するルートも出ます。<br>・「最大混雑率」はその区間で期待できる最大の乗車率（過去の記録の中央値）です。<br>・時刻をタップすると、その列車の過去の混雑記録（日付ごと・号車ごと）を表示します。表の☆の付いた駅の行をタップすると、その駅・時刻・列車をお気に入りに登録できます。<br>・「お気に入り駅・列車を経由」では、選んだお気に入りを時刻順につなぎます。間に合わない区間は遅れて着く列車で補い、それでも無理なときはその駅から再開します（どちらも「補完」と表示）。<br>・学校を選ぶ／arriving_time優先のときは、学校の最寄駅を「着くべき最終時刻の20分前〜直前」に通ると加点します（1校1回まで）。<br>・性別・年齢の構成はデータがないため考慮していません（混雑度のみで判定）。</p>
+ <p class="note">・ダイヤは公式時刻表ではなく、過去の記録で各列車が各駅にいた時刻の中央値（実測ダイヤ）です。数分ずれることがあるため、実際の巡回前に公式時刻表で確認してください。<br>・乗り降りできる駅は種別ごとの停車駅一覧で判定しています。嵯峨野線・奈良線の京都駅のように、JRのデータに表示されない停車駅の時刻は前後の駅から推定しています（「推定」と表示）。<br>・「効率優先」は待ち時間を強く減らして、混雑列車に乗っている時間を最大にします。同じ区間を行き来するルートも出ます。<br>・「最大混雑率」はその区間で期待できる最大の乗車率（過去の記録の中央値）です。<br>・駅名の横の🟣（arriving_time 51〜100）・🟢（0〜50）は、その駅を最寄りとする学校です。学校の数だけ表示し、タップすると学校名と始業時刻が出ます。<br>・時刻をタップすると、その列車の過去の混雑記録（日付ごと・号車ごと）を表示します。表の☆の付いた駅の行をタップすると、その駅・時刻・列車をお気に入りに登録できます。<br>・「お気に入り駅・列車を経由」では、選んだお気に入りを時刻順につなぎます。間に合わない区間は遅れて着く列車で補い、それでも無理なときはその駅から再開します（どちらも「補完」と表示）。<br>・学校を選ぶ／arriving_time優先のときは、学校の最寄駅を「着くべき最終時刻の20分前〜直前」に通ると加点します（1校1回まで）。<br>・性別・年齢の構成はデータがないため考慮していません（混雑度のみで判定）。</p>
 </main>
 <script src="trend.js"></script>
 <script>
@@ -416,12 +420,25 @@ function favSolve(mode){
  if(!real.length)return{msg:'お気に入りの間を移動できる列車が見つかりませんでした',notes};
  return{ctx,routes:[{legs:real,allLegs:legs,cov:new Set(),pts,notes}],fav:true,note:pts.some(p=>!p.exact)?'一部のお気に入りは、選んだ曜日の実測ダイヤに同じ列車がないため登録時の時刻を使っています':''}}
 // ===== 表示 =====
+// 学校の最寄駅に印：arriving_time 51〜100 は🟣、0〜50（未設定を含む）は🟢。学校の数だけ並べ、タップで学校と始業時刻を表示
+function schoolsAt(st){return SCH?SCH.segments.flatMap(g=>g.items).filter(x=>x.station===st):[]}
+function dots(st){
+ return schoolsAt(st).sort((a,b)=>(b.arriving_time??-1)-(a.arriving_time??-1)).map(x=>
+  `<button type="button" class="sdot" data-sch="${esc(x.name)}" aria-label="${esc(x.name)}">${(x.arriving_time??0)>50?'🟣':'🟢'}</button>`).join('')}
+function showSchool(name){
+ const x=SCH.segments.flatMap(g=>g.items).find(i=>i.name===name);if(!x)return;
+ const d=document.createElement('div');d.className='spop';
+ d.innerHTML=`<div class="bx" role="dialog" aria-label="学校の情報"><h3>${(x.arriving_time??0)>50?'🟣':'🟢'} ${esc(x.name)}</h3>
+  <div>始業 <b>${esc(x.start)}</b>　最寄駅（${esc(x.station)}）到着の最終 <b>${hm(deadline(x))}</b></div>
+  <div class="sub">駅から${esc(x.access?.type||'')}${x.access?.min??''}分${x.arriving_time!=null?`・arriving_time ${x.arriving_time}`:''}${x.hensachi?`・偏差値 ${x.hensachi}（推定）`:''}</div>
+  ${x.note?`<div class="sub">${esc(x.note)}</div>`:''}<button type="button">閉じる</button></div>`;
+ document.body.appendChild(d);d.onclick=e=>{if(e.target===d||e.target.tagName==='BUTTON')d.remove()}}
 let ROUTES=[];   // 表示中のルート（お気に入り保存用）
 function routeHtml(res,r,title){
  const ri=ROUTES.push({res,r,title})-1;
  const ctx=res.ctx,ride=r.legs.reduce((a,l)=>a+l.arr-l.dep,0),wait=r.legs.reduce((a,l)=>a+l.wait,0),first=r.legs[0],last=r.legs.at(-1);
  const secs=r.legs.reduce((a,l)=>a+l.secs,0),mins=r.legs.reduce((a,l)=>a+l.mins,0),total=last.arr-first.dep;
- let h=`<h2>${title}</h2><div class="card sum">${esc(P.S[first.from])} <b>${hm(first.dep)}</b> 発 → ${esc(P.S[last.to])} <b>${hm(last.arr)}</b> 着<br>
+ let h=`<h2>${title}</h2><div class="card sum">${esc(P.S[first.from])}${dots(P.S[first.from])} <b>${hm(first.dep)}</b> 発 → ${esc(P.S[last.to])}${dots(P.S[last.to])} <b>${hm(last.arr)}</b> 着<br>
   所要 ${dur(total)}（乗車 ${dur(ride)}・ホーム待ち ${dur(wait-first.wait)}）・乗り換え ${r.legs.length-1}回<br>
   ${r.notes?.length||r.legs.some(l=>l.fill)?`<div class="fillnote">⚠ 補完されたルートです。${(r.notes||[]).join('／')}</div>`:''}${r.pts?`<span>★ 経由するお気に入り：${r.pts.length}件（${r.pts.filter(p=>r.legs.some(l=>{const tr=ctx.trs[l.ti];return tr[0]===p.no&&p.t>=l.dep&&p.t<=l.arr})).length}件はその列車に乗車）</span><br>`:''}${schoolLine(r)}<span class="sub">混雑した状態で乗る時間 約${Math.round(mins)}分（所要の${total?Math.round(mins/total*100):0}%）・${LVN[ctx.L]}の区間 約${secs.toFixed(1)}区間分・期待できる最大混雑率 ${Math.max(...r.legs.map(l=>l.exp))}%（見込み）</span></div>`;
  r.legs.forEach((l,i)=>{const tr=ctx.trs[l.ti],ln=P.L[tr[5].find(s=>s[1]>=l.dep)?.[3]]||'';
@@ -430,7 +447,7 @@ function routeHtml(res,r,title){
   else if(l.wait>0)h+=`<div class="wait">${esc(P.S[l.from])}で ${l.wait}分待ち</div>`;
   const nt=l.car&&noteFor(P.S[l.from],tr[3],l.car);
   const fp=(r.pts||[]).filter(p=>p.no===tr[0]&&p.t>=l.dep&&p.t<=l.arr).map(p=>`★ ${p.station}駅 ${hm(p.t)}`);
-  h+=`<div class="leg${l.secs<.5?' cool':''}"><div class="t">${i+1}. <button class="tlink" data-no="${esc(tr[0])}" data-title="${esc(tr[0]+' '+tr[1]+' '+tr[2]+'行')}">${hm(l.dep)}</button> ${esc(P.S[l.from])} → ${hm(l.arr)} ${esc(P.S[l.to])}（${l.arr-l.dep}分）</div>
+  h+=`<div class="leg${l.secs<.5?' cool':''}"><div class="t">${i+1}. <button class="tlink" data-no="${esc(tr[0])}" data-title="${esc(tr[0]+' '+tr[1]+' '+tr[2]+'行')}">${hm(l.dep)}</button> ${esc(P.S[l.from])}${dots(P.S[l.from])} → ${hm(l.arr)} ${esc(P.S[l.to])}${dots(P.S[l.to])}（${l.arr-l.dep}分）</div>
    ${l.fill?`<div class="fillnote">⚠ 補完されたルート：${l.fill}</div>`:''}${fp.length?`<div class="favmark">${esc(fp.join('・'))}（お気に入り）</div>`:''}
    <div>${esc(tr[0])} ${esc(tr[1])} ${esc(tr[2])}行${ln?`（${LN[ln]||ln}）`:''}</div>
    ${l.exp>=0?`<div>期待できる最大混雑率 <b>${l.exp}%</b>${l.expCar?`（${l.expCar}号車）`:''}</div>`:''}
@@ -483,6 +500,7 @@ function run(){
  },30);
 }
 function bind(){
+ $('out').querySelectorAll('.sdot').forEach(b=>b.onclick=e=>{e.stopPropagation();showSchool(b.dataset.sch)});
  $('out').querySelectorAll('.savebtn').forEach(b=>b.onclick=()=>addFav(ROUTES[+b.dataset.ri]));
  $('out').querySelectorAll('.tlink').forEach(b=>b.onclick=()=>showTrend(b.dataset.no,b.dataset.title));
  $('out').querySelectorAll('.sug button').forEach(b=>b.onclick=()=>{const sel=$('vias').querySelectorAll('select')[+b.dataset.vi];if(sel){sel.value=b.dataset.st;run()}});
