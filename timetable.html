@@ -1,4 +1,4 @@
-<!doctype html>
+ <!doctype html>
 <html lang="ja"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>時刻表と混雑</title>
@@ -148,4 +148,5 @@ function detail(r){
 }
 (async()=>{try{const i=await (await fetch('stats/index.json',{cache:'no-store'})).json();if(i.T)T=i.T}catch(e){}
  $('line').onchange=loadLine;$('stn').onchange=fillDir;$('dty').onchange=fillDir;['dir','lv','th'].forEach(id=>$(id).onchange=render);loadLine()})();
-</script></body></html>
+</script><script src="prefs.js"></script>
+</body></html>
