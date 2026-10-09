@@ -144,7 +144,7 @@ function detail(r){
  if(cars.length)h+=`<button class="btn" id="tbtn">号車ごとの乗車率の推移を見る</button>`;
  const ov=document.createElement('div');ov.className='tr-ov';ov.innerHTML=`<div class="tr-box" role="dialog">${h}</div>`;document.body.appendChild(ov);
  ov.onclick=e=>{if(e.target===ov)ov.remove()};ov.querySelector('.tr-x').onclick=()=>ov.remove();
- const tb=ov.querySelector('#tbtn');if(tb)tb.onclick=()=>{ov.remove();showTrend(no,`${no} ${typ} ${dest}行`)};
+ const tb=ov.querySelector('#tbtn'),stn=$('stn').value;if(tb)tb.onclick=()=>{ov.remove();showTrend(no,`${no} ${typ} ${dest}行`,{station:stn})};
 }
 (async()=>{try{const i=await (await fetch('stats/index.json',{cache:'no-store'})).json();if(i.T)T=i.T}catch(e){}
  $('line').onchange=loadLine;$('stn').onchange=fillDir;$('dty').onchange=fillDir;['dir','lv','th'].forEach(id=>$(id).onchange=render);loadLine()})();
