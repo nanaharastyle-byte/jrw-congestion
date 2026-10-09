@@ -1,52 +1,40 @@
 {
- "1060M": [
+ "1230C": [
   {
    "cars": [
     {
-     "carNo": 1,
+     "carNo": 7,
      "status": 1,
-     "congestion": -1,
-     "temp": -1,
-     "facilities": [],
-     "types": []
-    },
-    {
-     "carNo": 2,
-     "status": 1,
-     "congestion": -1,
-     "temp": -1,
-     "facilities": [],
-     "types": []
-    },
-    {
-     "carNo": 3,
-     "status": 1,
-     "congestion": -1,
-     "temp": -1,
-     "facilities": [],
-     "types": []
-    },
-    {
-     "carNo": 4,
-     "status": 1,
-     "congestion": -1,
-     "temp": -1,
-     "facilities": [],
-     "types": []
-    },
-    {
-     "carNo": 5,
-     "status": 1,
-     "congestion": -1,
-     "temp": -1,
+     "congestion": 105,
+     "temp": 23,
      "facilities": [],
      "types": []
     },
     {
      "carNo": 6,
      "status": 1,
-     "congestion": -1,
-     "temp": -1,
+     "congestion": 72,
+     "temp": 23,
+     "facilities": [],
+     "types": [
+      3
+     ]
+    },
+    {
+     "carNo": 5,
+     "status": 1,
+     "congestion": 75,
+     "temp": 23,
+     "facilities": [],
+     "types": [
+      4
+     ]
+    },
+    {
+     "carNo": 4,
+     "status": 1,
+     "congestion": 111,
+     "temp": 23,
      "facilities": [],
      "types": []
     }
@@ -55,37 +43,34 @@
   {
    "cars": [
     {
-     "carNo": 7,
+     "carNo": 3,
      "status": 1,
-     "congestion": 62,
-     "temp": 25,
+     "congestion": 85,
+     "temp": 22,
      "facilities": [
-      3,
-      4,
-      5
+      1,
+      2
      ],
      "types": []
     },
     {
-     "carNo": 8,
+     "carNo": 2,
      "status": 1,
-     "congestion": 63,
-     "temp": 25,
-     "facilities": [
-      3,
-      4,
-      5
-     ],
-     "types": []
+     "congestion": 68,
+     "temp": 22,
+     "facilities": [],
+     "types": [
+      3
+     ]
     },
     {
-     "carNo": 9,
+     "carNo": 1,
      "status": 1,
-     "congestion": 45,
-     "temp": 25,
+     "congestion": 75,
+     "temp": 23,
      "facilities": [
-      3,
-      5
+      1,
+      2
      ],
      "types": []
     }
