@@ -57,8 +57,8 @@
     {
      "carNo": 7,
      "status": 1,
-     "congestion": 9,
-     "temp": 24,
+     "congestion": 13,
+     "temp": 25,
      "facilities": [
       3,
       4,
@@ -81,7 +81,7 @@
     {
      "carNo": 9,
      "status": 1,
-     "congestion": 32,
+     "congestion": 43,
      "temp": 24,
      "facilities": [
       1,
