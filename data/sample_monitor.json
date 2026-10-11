@@ -1,41 +1,40 @@
 {
- "100C": [
+ "1003M": [
   {
    "cars": [
     {
-     "carNo": 7,
+     "carNo": 9,
      "status": 1,
-     "congestion": 30,
-     "temp": 24,
-     "facilities": [],
+     "congestion": 14,
+     "temp": 20,
+     "facilities": [
+      3,
+      5
+     ],
      "types": []
     },
     {
-     "carNo": 6,
+     "carNo": 8,
      "status": 1,
-     "congestion": 28,
-     "temp": 24,
-     "facilities": [],
-     "types": [
-      3
-     ]
+     "congestion": 0,
+     "temp": 20,
+     "facilities": [
+      3,
+      4,
+      5
+     ],
+     "types": []
     },
     {
-     "carNo": 5,
+     "carNo": 7,
      "status": 1,
-     "congestion": 25,
-     "temp": 24,
-     "facilities": [],
-     "types": [
-      4
-     ]
-    },
-    {
-     "carNo": 4,
-     "status": 1,
-     "congestion": 40,
-     "temp": 23,
-     "facilities": [],
+     "congestion": 17,
+     "temp": 20,
+     "facilities": [
+      3,
+      4,
+      5
+     ],
      "types": []
     }
    ]
@@ -43,32 +42,51 @@
   {
    "cars": [
     {
+     "carNo": 6,
+     "status": 1,
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 5,
+     "status": 1,
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
+     "types": []
+    },
+    {
+     "carNo": 4,
+     "status": 1,
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
+     "types": []
+    },
+    {
      "carNo": 3,
      "status": 1,
-     "congestion": 47,
-     "temp": 23,
+     "congestion": -1,
+     "temp": -1,
      "facilities": [],
      "types": []
     },
     {
      "carNo": 2,
      "status": 1,
-     "congestion": 15,
-     "temp": 24,
+     "congestion": -1,
+     "temp": -1,
      "facilities": [],
-     "types": [
-      3
-     ]
+     "types": []
     },
     {
      "carNo": 1,
      "status": 1,
-     "congestion": 37,
-     "temp": 24,
-     "facilities": [
-      1,
-      2
-     ],
+     "congestion": -1,
+     "temp": -1,
+     "facilities": [],
      "types": []
     }
    ]
